@@ -388,8 +388,8 @@ if __name__ == "__main__":
         "RadiationSetting" : "SC"
     }
 
-    input_folder = "sample_dicoms/"
-    output_folder = "anonymized_output/"
+    input_folder = "sample/sample_dicoms/"
+    output_folder = "sample/anonymized_output/"
     
     print("Starting DICOM anonymization with CSV configuration...")
     print(f"Input folder: {input_folder}")
