@@ -1,396 +1,3 @@
-# import pandas as pd
-# import pydicom
-# import os
-# import re
-# import hashlib
-# from pathlib import Path
-# from pydicom.uid import generate_uid
-
-# # DICOM tags that cannot be removed or emptied (Type 1 - Required)
-# type_ones = [
-#     "SpecificCharacterSet",
-#     "ProcedureCodeSequence_Seq0_CodeValue",
-#     "ProcedureCodeSequence_Seq0_CodingSchemeDesignator",
-#     "ProcedureCodeSequence_Seq0_CodeMeaning",
-#     "RequestedProcedureCodeSequence_Seq0_CodeValue",
-#     "RequestedProcedureCodeSequence_Seq0_CodingSchemeDesignator",
-#     "RequestedProcedureCodeSequence_Seq0_CodeMeaning",
-#     "PerformedProtocolCodeSequence_Seq0_CodeValue",
-#     "PerformedProtocolCodeSequence_Seq0_CodingSchemeDesignator",
-#     "PerformedProtocolCodeSequence_Seq0_CodeMeaning",
-#     "BodyPartExamined",
-#     "SOPClassUID",                    # (0008,0016)
-#     "SOPInstanceUID",                 # (0008,0018)
-#     "StudyDate",                      # (0008,0020)
-#     "SeriesDate",                     # (0008,0021)
-#     "AcquisitionDate",                # (0008,0022)
-#     "ContentDate",                    # (0008,0023)
-#     "StudyTime",                      # (0008,0030)
-#     "SeriesTime",                     # (0008,0031)
-#     "AcquisitionTime",                # (0008,0032)
-#     "ContentTime",                    # (0008,0033)
-#     "AccessionNumber",                # (0008,0050)
-#     "Modality",                       # (0008,0060)
-#     "Manufacturer",                   # (0008,0070)
-#     "StudyInstanceUID",               # (0020,000D)
-#     "SeriesInstanceUID",              # (0020,000E)
-#     "StudyID",                        # (0020,0010)
-#     "SeriesNumber",                   # (0020,0011)
-#     "InstanceNumber",                 # (0020,0013)
-#     "PatientOrientation",             # (0020,0020)
-#     "ImagePositionPatient",           # (0020,0032)
-#     "ImageOrientationPatient",        # (0020,0037)
-#     "FrameOfReferenceUID",            # (0020,0052)
-#     "SamplesPerPixel",                # (0028,0002)
-#     "PhotometricInterpretation",      # (0028,0004)
-#     "Rows",                           # (0028,0010)
-#     "Columns",                        # (0028,0011)
-#     "BitsAllocated",                  # (0028,0100)
-#     "BitsStored",                     # (0028,0101)
-#     "HighBit",                        # (0028,0102)
-#     "PixelRepresentation",            # (0028,0103)
-#     "PixelData",                      # (7FE0,0010)
-#     "PixelSpacing",
-#     "WindowCenter",                   # (0028,1050)
-#     "WindowWidth",                    # (0028,1051)
-#     "RescaleIntercept",               # (0028,1052)
-#     "RescaleSlope",                   # (0028,1053)
-#     "RescaleType"                     # (0028,1054)
-# ]
-
-# # DICOM tags that cannot be removed but can be emptied (Type 2 - Required but can be empty)
-# type_twos = [
-#     "ImageType",                      # (0008,0008)
-#     "StudyDescription",               # (0008,1030) - MOVED HERE FROM type_ones
-#     "SeriesDescription",              # (0008,103E)
-#     "PatientName",                    # (0010,0010)
-#     "PatientID",                      # (0010,0020)
-#     "PatientBirthDate",               # (0010,0030)
-#     "PatientSex",                     # (0010,0040)
-#     "PatientAge",                     # (0010,1010)
-#     "PatientWeight",                  # (0010,1030)
-#     "PatientSize",                    # (0010,1020)
-#     "PatientPosition",                # (0018,5100)
-#     "SliceThickness",                 # (0018,0050)
-#     "SpacingBetweenSlices",           # (0018,0088)
-#     "SliceLocation",                  # (0020,1041)
-#     "ImageComments",                  # (0020,4000)
-#     "ProtocolName",                   # (0018,1030)
-#     "InstitutionName",                # (0008,0080)
-#     "InstitutionAddress",             # (0008,0081)
-#     "ReferringPhysicianName",         # (0008,0090)
-#     "PerformingPhysicianName",        # (0008,1050)
-#     "OperatorsName",                  # (0008,1070)
-#     "ManufacturerModelName",          # (0008,1090)
-#     "DeviceSerialNumber",             # (0018,1000)
-#     "SoftwareVersions",               # (0018,1020)
-#     "StationName",                    # (0008,1010)
-#     "RequestingPhysician",            # (0032,1032)
-#     "RequestedProcedureDescription",  # (0032,1060)
-# ]
-
-# # Tags that should NOT be hashed (keep original values) - FIXED SYNTAX ERRORS
-# no_hash_tags = [
-#     "SpecificCharacterSet",
-#     "StudyDescription",               # Keep for LPCH removal only
-#     "ProcedureCodeSequence_Seq0_CodeValue",
-#     "ProcedureCodeSequence_Seq0_CodingSchemeDesignator",
-#     "ProcedureCodeSequence_Seq0_CodeMeaning",
-#     "RequestedProcedureCodeSequence_Seq0_CodeValue",
-#     "RequestedProcedureCodeSequence_Seq0_CodingSchemeDesignator",
-#     "RequestedProcedureCodeSequence_Seq0_CodeMeaning",
-#     "PerformedProtocolCodeSequence_Seq0_CodeValue",
-#     "PerformedProtocolCodeSequence_Seq0_CodingSchemeDesignator",
-#     "PerformedProtocolCodeSequence_Seq0_CodeMeaning",
-#     "BodyPartExamined",
-#     "SOPInstanceUID",                 # (0008,0018)
-#     "Modality",                       # (0008,0060)
-#     "SamplesPerPixel",                # (0028,0002)
-#     "PhotometricInterpretation",      # (0028,0004)
-#     "Rows",                           # (0028,0010)
-#     "Columns",                        # (0028,0011)
-#     "BitsAllocated",                  # (0028,0100)
-#     "BitsStored",                     # (0028,0101)
-#     "HighBit",                        # (0028,0102)
-#     "PixelRepresentation",            # (0028,0103)
-#     "PixelData",                      # (7FE0,0010)
-#     "PatientOrientation",
-#     "ImagePositionPatient",
-#     "ImageOrientationPatient",
-#     "SliceThickness",
-#     "SpacingBetweenSlices",
-#     "PixelSpacing",                   # FIXED: Added comma
-#     "WindowCenter",                   # (0028,1050)
-#     "WindowWidth",                    # (0028,1051)
-#     "RescaleIntercept",               # (0028,1052)
-#     "RescaleSlope",                   # (0028,1053)
-#     "RescaleType"                     # (0028,1054)
-# ]
-
-# # Store mappings to ensure consistency
-# patient_id_mapping = {}
-# study_uid_mapping = {}
-# series_uid_mapping = {}
-
-# def get_consistent_hash(value, mapping_dict):
-#     """Get consistent hash for repeated values"""
-#     if value in mapping_dict:
-#         return mapping_dict[value]
-    
-#     # Create new hash
-#     hash_object = hashlib.sha256(str(value).encode())
-#     hashed = hash_object.hexdigest()[:16]
-#     mapping_dict[value] = hashed
-#     return hashed
-
-# def get_consistent_numeric_hash(value, mapping_dict, max_digits=12):
-#     """Get consistent numeric hash for repeated values"""
-#     if value in mapping_dict:
-#         return mapping_dict[value]
-    
-#     # Generate numeric hash that fits IS VR constraints
-#     hash_int = abs(hash(str(value))) % (10 ** max_digits - 1)
-#     str_hash = str(hash_int)
-#     mapping_dict[value] = str_hash
-#     return str_hash
-
-# def remove_lpch(value):
-#     """Remove LPCH and LPCH - substrings from value"""
-#     if isinstance(value, str):
-#         original_value = value
-#         # Remove LPCH with various spacing patterns
-#         cleaned = value.replace("LPCH -", "").replace("LPCH", "").replace("- LPCH", "")
-#         # Clean up extra spaces and dashes
-#         cleaned = re.sub(r'\s+', ' ', cleaned)  # Replace multiple spaces with single space
-#         cleaned = re.sub(r'^[\s\-]+|[\s\-]+$', '', cleaned)  # Remove leading/trailing spaces and dashes
-        
-#         if original_value != cleaned:
-#             print(f"LPCH REMOVED: '{original_value}' -> '{cleaned}'")
-        
-#         return cleaned
-#     return value
-
-# def get_consistent_uid(original_uid, mapping_dict, prefix="1.2.840.113619."):
-#     """Get consistent UID for repeated UIDs"""
-#     if original_uid in mapping_dict:
-#         return mapping_dict[original_uid]
-    
-#     # Generate new UID
-#     new_uid = generate_uid(prefix=prefix)
-#     mapping_dict[original_uid] = new_uid
-#     return new_uid
-
-# def get_anonymized_value(element, keyword):
-#     """Get appropriately anonymized value based on element type and VR"""
-#     original_value = element.value
-    
-#     # Handle UID fields specially
-#     if keyword in ["StudyInstanceUID", "SeriesInstanceUID", "FrameOfReferenceUID"]:
-#         if keyword == "StudyInstanceUID":
-#             return get_consistent_uid(original_value, study_uid_mapping)
-#         elif keyword == "SeriesInstanceUID":
-#             return get_consistent_uid(original_value, series_uid_mapping)
-#         else:
-#             return generate_uid()
-    
-#     # Handle numeric fields that need to stay numeric
-#     elif element.VR == 'IS':  # Integer String - max 12 chars, must be numeric
-#         if keyword in ["StudyID", "SeriesNumber", "InstanceNumber"]:
-#             # Generate a numeric hash that fits the constraints
-#             return get_consistent_numeric_hash(original_value, {}, 12)
-#         else:
-#             return str(original_value)
-    
-#     elif element.VR == 'DS':  # Decimal String - must be numeric
-#         # Keep original numeric values for technical parameters
-#         return original_value
-    
-#     elif element.VR in ['FL', 'FD', 'SL', 'SS', 'UL', 'US']:  # Other numeric types
-#         return original_value
-    
-#     # Handle date/time fields
-#     elif element.VR == 'DA':  # Date
-#         if keyword in ["StudyDate", "SeriesDate", "AcquisitionDate", "ContentDate"]:
-#             return "20200101"  # Fixed anonymized date
-#         else:
-#             return original_value
-    
-#     elif element.VR == 'TM':  # Time
-#         if keyword in ["StudyTime", "SeriesTime", "AcquisitionTime", "ContentTime"]:
-#             return "120000.000000"
-#         else:
-#             return original_value
-    
-#     # Handle text fields - these can take hash strings
-#     else:
-#         if keyword == "PatientID":
-#             return get_consistent_hash(original_value, patient_id_mapping)
-#         elif keyword == "AccessionNumber":
-#             return get_consistent_hash(original_value, {})
-#         else:
-#             return get_consistent_hash(original_value, {})
-
-# def anonymize_dicom(input_path, output_path):
-#     """Anonymize a single DICOM file"""
-#     try:
-#         ds = pydicom.dcmread(input_path)
-#         elements_to_remove = []
-        
-#         # FIRST PASS: Remove LPCH from ALL elements
-#         for element in ds.iterall():
-#             if hasattr(element, 'value') and isinstance(element.value, str) and "LPCH" in element.value:
-#                 original_value = element.value
-#                 cleaned_value = remove_lpch(element.value)
-#                 element.value = cleaned_value
-#                 print(f"LPCH cleaned from {element.keyword or element.tag}: '{original_value}' -> '{cleaned_value}'")
-        
-#         # SECOND PASS: Handle anonymization by type
-#         for element in ds.iterall():
-#             keyword = element.keyword
-                
-#             if hasattr(element, 'value') and element.value is not None:
-                
-#                 # Handle Type 1 tags
-#                 if keyword in type_ones:
-#                     if keyword not in no_hash_tags:
-#                         try:
-#                             new_value = get_anonymized_value(element, keyword)
-#                             element.value = new_value
-#                             print(f"Anonymized {keyword} (VR: {element.VR})")
-#                         except Exception as e:
-#                             print(f"Error anonymizing {keyword}: {e}")
-#                     # else: keep original value (in no_hash_tags)
-                
-#                 # Handle Type 2 tags (empty them, EXCEPT StudyDescription which keeps LPCH-cleaned value)
-#                 elif keyword in type_twos:
-#                     if keyword == "StudyDescription":
-#                         # Keep the LPCH-cleaned value, don't empty it
-#                         print(f"Kept StudyDescription with LPCH removed: '{element.value}'")
-#                     else:
-#                         try:
-#                             # Set appropriate empty value based on VR
-#                             if element.VR == 'IS':
-#                                 element.value = ""
-#                             elif element.VR == 'DS':
-#                                 element.value = ""
-#                             elif element.VR in ['FL', 'FD', 'SL', 'SS', 'UL', 'US']:
-#                                 element.value = None
-#                             else:
-#                                 element.value = ""
-#                             print(f"Emptied {keyword} (VR: {element.VR})")
-#                         except Exception as e:
-#                             print(f"Error emptying {keyword}: {e}")
-                
-#                 # Handle Type 3 tags (remove them)
-#                 else:
-#                     elements_to_remove.append(element.tag)
-            
-#             else:
-#                 if keyword not in type_ones and keyword not in type_twos:
-#                     elements_to_remove.append(element.tag)
-        
-#         # Remove Type 3 elements
-#         for tag in elements_to_remove:
-#             if tag in ds:
-#                 try:
-#                     del ds[tag]
-#                 except Exception as e:
-#                     print(f"Error removing tag {tag}: {e}")
-        
-#         # Save anonymized DICOM
-#         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-#         ds.save_as(output_path)
-#         print(f"Successfully anonymized: {os.path.basename(input_path)}")
-        
-#     except Exception as e:
-#         print(f"Error processing {input_path}: {e}")
-
-# def anonymize_folder(input_folder, output_folder):
-#     """Anonymize all DICOM files in a folder"""
-    
-#     input_path = Path(input_folder)
-#     output_path = Path(output_folder)
-    
-#     # Create output directory
-#     output_path.mkdir(parents=True, exist_ok=True)
-    
-#     # Find all DICOM files
-#     dicom_files = []
-#     for root, dirs, files in os.walk(input_path):
-#         for file in files:
-#             if file.endswith('.dcm'):
-#                 dicom_files.append(os.path.join(root, file))
-    
-#     print(f"Found {len(dicom_files)} DICOM files to process")
-    
-#     # Process each file
-#     for i, dicom_file in enumerate(dicom_files):
-#         # Preserve relative directory structure
-#         rel_path = os.path.relpath(dicom_file, input_path)
-#         output_file = output_path / rel_path
-        
-#         # Ensure output subdirectory exists
-#         output_file.parent.mkdir(parents=True, exist_ok=True)
-        
-#         print(f"\nProcessing {i+1}/{len(dicom_files)}: {rel_path}")
-#         anonymize_dicom(dicom_file, str(output_file))
-    
-#     print(f"\nAnonymization complete! Processed {len(dicom_files)} files")
-#     print(f"Anonymized files saved to: {output_folder}")
-
-
-
-
-
-# def get_tags_of_types(filepath_to_dicom_dict):
-#     # keep as-is
-#     type_ones = []
-#     # keep but modify as a dict: { tag : action }
-#     type_ones_to_modify = {}
-#     # empty
-#     type_twos = []
-#     # remove completely
-#     type_threes = []
-
-#     # load the dicom data dict csv
-#     dicom_data_dict = pd.read_csv(filepath_to_dicom_dict)
-#     # read from the "Action_to_Take" column
-#     for _, row in dicom_data_dict.iterrows():
-#         action = row["Action_to_Take"]
-#         if (action == "keep"):
-#             type_ones.append(row["Tag"])
-#         elif (action == "empty"):
-#             type_twos.append(row["Tag"])
-#         elif (action == "remove"):
-#             type_threes.append(row["Tag"])
-#         else:
-#             type_ones_to_modify[row["Tag"]] = action
-    
-#     return type_ones, type_ones_to_modify, type_twos, type_threes
-
-# if __name__ == "__main__":
-#     # get info on what to do with each tag
-#     type_ones, _, type_twos, type_threes = get_tags_of_types("dicom-data-dict.csv")
-#     custom_type_ones = {
-#         "ContentDate" : "random jitter",
-#         "PatientID" : "hash",
-#         "ContributingEquipmentSequence_Seq0_Manufacturer" : "hash",
-#         "StudyInstanceUID" : "hash",
-#         "SeriesInstanceUID" : "hash",
-#         "FilterMaterial" : "RHODIUM",
-#         "CollimatorLeftVerticalEdge" : "0",
-#         "CollimatorRightVerticalEdge" : "0",
-#         "CollimatorUpperHorizontalEdge" : "0",
-#         "CollimatorLowerHorizontalEdge" : "0",
-#         "ShutterShape" : "RECTANGULAR",
-#         "DistanceSourceToIsocenter" : "1",
-#         "Trim" : "1",
-#         "RadiationSetting" : "SC"
-#     }
-
-#     input_folder = "images/"
-#     output_folder = "pydicom-images/"
-
 import pandas as pd
 import pydicom
 import os
@@ -462,6 +69,27 @@ def remove_lpch(value):
         return cleaned
     return value
 
+# VRs whose values are raw binary - never scan or rewrite these as text
+BINARY_VRS = {'OB', 'OW', 'OF', 'OD', 'OL', 'OV', 'UN', 'SQ'}
+
+
+def clean_lpch_value(value):
+    """Strip LPCH from any string-ish DICOM value.
+
+    pydicom does not hand back a plain str for every text VR: PN comes back as
+    PersonName and multi-valued elements as MultiValue, neither of which is a str.
+    Testing isinstance(value, str) alone therefore silently skips every person-name
+    field, which is exactly where names tend to live.
+    """
+    if isinstance(value, pydicom.valuerep.PersonName):
+        return remove_lpch(str(value))
+    if isinstance(value, pydicom.multival.MultiValue):
+        return [clean_lpch_value(v) for v in value]
+    if isinstance(value, str):
+        return remove_lpch(value)
+    return value
+
+
 def get_consistent_uid(original_uid, mapping_dict, prefix="1.2.840.113619."):
     """Get consistent UID for repeated UIDs"""
     if original_uid in mapping_dict:
@@ -505,94 +133,163 @@ def apply_custom_action(element, keyword, action, patient_id=None):
         element.value = action
         print(f"Replaced {keyword}: '{original_value}' -> '{action}'")
 
+SEQ_INDEX_RE = re.compile(r"_Seq\d+_")
+
+
+def normalize_tag_name(name):
+    """Make a tag name index-insensitive so one CSV row covers every item of a sequence.
+
+    The CSV's flattened names (e.g. PerformedProtocolCodeSequence_Seq0_CodeValue) come
+    from get_metadata.py, and the indices in them are just whatever the source dataset
+    happened to contain - they are not a per-item instruction. Collapsing the index means
+    a rule written for _Seq0_ also applies to item 7 of a file we have never seen.
+    The CSV itself is never modified; this only affects lookup keys.
+    """
+    return SEQ_INDEX_RE.sub("_Seq_", name)
+
+
+def normalize_keys(rules):
+    """Index-normalize a list of tag names or a {tag name: action} dict."""
+    if isinstance(rules, dict):
+        return {normalize_tag_name(k): v for k, v in rules.items()}
+    return {normalize_tag_name(k) for k in rules}
+
+
+def process_dataset(ds, prefix, type_ones, type_ones_to_modify, type_twos, type_threes,
+                    custom_type_ones, patient_id):
+    """Apply the CSV rules to one dataset level, recursing into sequences.
+
+    prefix builds up the same flattened name the CSV uses, so nested tags such as
+    ContributingEquipmentSequence_Seq0_InstitutionName can actually be matched.
+    Removals are collected per level and deleted from the dataset that owns the
+    element - deleting a nested element's tag from the top-level dataset would either
+    do nothing or delete an unrelated element that shares the tag number.
+    """
+    elements_to_remove = []
+
+    for element in ds:
+        keyword = element.keyword or f"Tag_{element.tag}"
+        full_name = f"{prefix}{keyword}"
+        key = normalize_tag_name(full_name)
+
+        # A sequence itself may be marked for removal; otherwise descend into its items.
+        if element.VR == 'SQ':
+            if key in type_threes:
+                elements_to_remove.append(element.tag)
+                print(f"Marked sequence for removal: {full_name} ({element.tag})")
+            else:
+                for i, item in enumerate(element.value):
+                    process_dataset(item, f"{full_name}_Seq{i}_", type_ones,
+                                    type_ones_to_modify, type_twos, type_threes,
+                                    custom_type_ones, patient_id)
+            continue
+
+        if hasattr(element, 'value') and element.value is not None:
+
+            # Handle custom actions first (highest priority)
+            if key in custom_type_ones:
+                apply_custom_action(element, full_name, custom_type_ones[key], patient_id)
+
+            # Handle Type 1 tags that need modification
+            elif key in type_ones_to_modify:
+                apply_custom_action(element, full_name, type_ones_to_modify[key], patient_id)
+
+            # Handle Type 1 tags (keep as-is)
+            elif key in type_ones:
+                print(f"Kept {full_name}: '{element.value}'")
+
+            # Handle Type 2 tags (empty them)
+            elif key in type_twos:
+                try:
+                    if element.VR in ['FL', 'FD', 'SL', 'SS', 'UL', 'US']:
+                        element.value = None
+                    else:
+                        element.value = ""
+                    print(f"Emptied {full_name} (VR: {element.VR})")
+                except Exception as e:
+                    print(f"Error emptying {full_name}: {e}")
+
+            # Handle Type 3 tags (remove them) - ONLY if explicitly in type_threes list
+            elif key in type_threes:
+                elements_to_remove.append(element.tag)
+                print(f"Marked for removal: {full_name} ({element.tag})")
+
+            # For all other tags (not in CSV), do nothing - leave as-is.
+            # This includes PixelData and any other tag the CSV does not mention.
+            else:
+                pass
+
+        else:
+            # Empty elements - only remove if explicitly in type_threes list
+            if key in type_threes:
+                elements_to_remove.append(element.tag)
+
+    # Remove only the explicitly marked elements, from this dataset level
+    for tag in elements_to_remove:
+        if tag in ds:
+            try:
+                del ds[tag]
+                print(f"Removed tag: {tag}")
+            except Exception as e:
+                print(f"Error removing tag {tag}: {e}")
+
+
 def anonymize_dicom(input_path, output_path, type_ones, type_ones_to_modify, type_twos, type_threes, custom_type_ones):
-    """Anonymize a single DICOM file based on configuration"""
+    """Anonymize a single DICOM file based on configuration.
+
+    Returns True on success, False if the file could not be anonymized or written.
+    """
+    tmp_path = output_path + ".partial"
     try:
         ds = pydicom.dcmread(input_path)
-        elements_to_remove = []
-        
+
+        # Index-normalize every rule set so nested CSV names can match (see item 2)
+        type_ones = normalize_keys(type_ones)
+        type_ones_to_modify = normalize_keys(type_ones_to_modify)
+        type_twos = normalize_keys(type_twos)
+        type_threes = normalize_keys(type_threes)
+        custom_type_ones = normalize_keys(custom_type_ones)
+
         # Get PatientID for consistent jittering
         patient_id = None
         if hasattr(ds, 'PatientID') and ds.PatientID:
             patient_id = ds.PatientID
-        
-        # FIRST PASS: Remove LPCH from ALL elements
+
+        # FIRST PASS: Remove LPCH from ALL elements, at every nesting level and in
+        # every string-ish VR (str, PersonName, MultiValue)
         for element in ds.iterall():
-            if hasattr(element, 'value') and isinstance(element.value, str) and "LPCH" in element.value:
-                original_value = element.value
-                cleaned_value = remove_lpch(element.value)
-                element.value = cleaned_value
-                print(f"LPCH cleaned from {element.keyword or element.tag}: '{original_value}' -> '{cleaned_value}'")
-        
+            if not hasattr(element, 'value') or element.value is None:
+                continue
+            if element.VR in BINARY_VRS or isinstance(element.value, (bytes, bytearray)):
+                continue
+            original_value = str(element.value)
+            if "LPCH" not in original_value:
+                continue
+            element.value = clean_lpch_value(element.value)
+            print(f"LPCH cleaned from {element.keyword or element.tag}: '{original_value}' -> '{element.value}'")
+
         # SECOND PASS: Handle anonymization by type - ONLY for tags explicitly listed in CSV
-        for element in ds.iterall():
-            keyword = element.keyword
-            
-            if hasattr(element, 'value') and element.value is not None:
-                
-                # Handle custom actions first (highest priority)
-                if keyword in custom_type_ones:
-                    action = custom_type_ones[keyword]
-                    apply_custom_action(element, keyword, action, patient_id)
-                
-                # Handle Type 1 tags that need modification
-                elif keyword in type_ones_to_modify:
-                    action = type_ones_to_modify[keyword]
-                    apply_custom_action(element, keyword, action, patient_id)
-                
-                # Handle Type 1 tags (keep as-is)
-                elif keyword in type_ones:
-                    # Keep original value
-                    print(f"Kept {keyword}: '{element.value}'")
-                
-                # Handle Type 2 tags (empty them)
-                elif keyword in type_twos:
-                    try:
-                        # Set appropriate empty value based on VR
-                        if element.VR == 'IS':
-                            element.value = ""
-                        elif element.VR == 'DS':
-                            element.value = ""
-                        elif element.VR in ['FL', 'FD', 'SL', 'SS', 'UL', 'US']:
-                            element.value = None
-                        else:
-                            element.value = ""
-                        print(f"Emptied {keyword} (VR: {element.VR})")
-                    except Exception as e:
-                        print(f"Error emptying {keyword}: {e}")
-                
-                # Handle Type 3 tags (remove them) - ONLY if explicitly in type_threes list
-                elif keyword in type_threes:
-                    elements_to_remove.append(element.tag)
-                    print(f"Marked for removal: {keyword} ({element.tag})")
-                
-                # CHANGED: For all other tags (not in CSV), do nothing - leave as-is
-                # This includes PixelData and any other tags not mentioned in the CSV
-                else:
-                    # Do nothing - leave the tag untouched
-                    pass
-            
-            else:
-                # Empty elements - only remove if explicitly in type_threes list
-                if keyword in type_threes:
-                    elements_to_remove.append(element.tag)
-        
-        # Remove only the explicitly marked elements
-        for tag in elements_to_remove:
-            if tag in ds:
-                try:
-                    del ds[tag]
-                    print(f"Removed tag: {tag}")
-                except Exception as e:
-                    print(f"Error removing tag {tag}: {e}")
-        
-        # Save anonymized DICOM
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        ds.save_as(output_path)
+        process_dataset(ds, "", type_ones, type_ones_to_modify, type_twos, type_threes,
+                        custom_type_ones, patient_id)
+
+        # Save anonymized DICOM. Written to a temp path first and moved into place only
+        # on success: pydicom validates values during write, so a bad value would
+        # otherwise leave a truncated file behind that looks like valid output.
+        os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+        ds.save_as(tmp_path, enforce_file_format=True)
+        os.replace(tmp_path, output_path)
         print(f"Successfully anonymized: {os.path.basename(input_path)}")
-        
+        return True
+
     except Exception as e:
         print(f"Error processing {input_path}: {e}")
+        # Never leave a partial file that could be mistaken for anonymized output
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+        return False
 
 
 def anonymize_folder(input_folder, output_folder, type_ones, type_ones_to_modify, type_twos, type_threes, custom_type_ones):
@@ -613,6 +310,9 @@ def anonymize_folder(input_folder, output_folder, type_ones, type_ones_to_modify
     
     print(f"Found {len(dicom_files)} DICOM files to process")
     
+    succeeded = 0
+    failed = []
+    
     # Process each file
     for i, dicom_file in enumerate(dicom_files):
         # Preserve relative directory structure
@@ -623,10 +323,18 @@ def anonymize_folder(input_folder, output_folder, type_ones, type_ones_to_modify
         output_file.parent.mkdir(parents=True, exist_ok=True)
         
         print(f"\nProcessing {i+1}/{len(dicom_files)}: {rel_path}")
-        anonymize_dicom(dicom_file, str(output_file), type_ones, type_ones_to_modify, type_twos, type_threes, custom_type_ones)
+        if anonymize_dicom(dicom_file, str(output_file), type_ones, type_ones_to_modify, type_twos, type_threes, custom_type_ones):
+            succeeded += 1
+        else:
+            failed.append(rel_path)
     
-    print(f"\nAnonymization complete! Processed {len(dicom_files)} files")
+    print(f"\nAnonymization complete! {succeeded}/{len(dicom_files)} files anonymized")
     print(f"Anonymized files saved to: {output_folder}")
+    if failed:
+        print(f"\nFAILED ({len(failed)}) - no output written for these files:")
+        for rel_path in failed:
+            print(f"  {rel_path}")
+    return succeeded, failed
 
 def get_tags_of_types(filepath_to_dicom_dict):
     # keep as-is
@@ -654,9 +362,12 @@ def get_tags_of_types(filepath_to_dicom_dict):
     
     return type_ones, type_ones_to_modify, type_twos, type_threes
 
+# Config CSV lives next to this script, so it resolves no matter where you run from
+CSV_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dicom-data-dict.csv")
+
 if __name__ == "__main__":
     # get info on what to do with each tag
-    type_ones, type_ones_to_modify, type_twos, type_threes = get_tags_of_types("data_analysis/dataset_creation/anonymizer/dicom-data-dict.csv")
+    type_ones, type_ones_to_modify, type_twos, type_threes = get_tags_of_types(CSV_CONFIG_PATH)
     
     custom_type_ones = {
         "ContentDate" : "random jitter",
@@ -665,23 +376,25 @@ if __name__ == "__main__":
         "StudyInstanceUID" : "hash",
         "SeriesInstanceUID" : "hash",
         "FilterMaterial" : "RHODIUM",
-        "CollimatorLeftVerticalEdge" : "0",
-        "CollimatorRightVerticalEdge" : "0",
-        "CollimatorUpperHorizontalEdge" : "0",
-        "CollimatorLowerHorizontalEdge" : "0",
+        # These four are VR IS (integer string) - use ints, not strings
+        "CollimatorLeftVerticalEdge" : 0,
+        "CollimatorRightVerticalEdge" : 0,
+        "CollimatorUpperHorizontalEdge" : 0,
+        "CollimatorLowerHorizontalEdge" : 0,
         "ShutterShape" : "RECTANGULAR",
-        "DistanceSourceToIsocenter" : "1",
+        # VR FL (float) - a string here fails inside save_as(), mid-write
+        "DistanceSourceToIsocenter" : 1.0,
         "Trim" : "1",
         "RadiationSetting" : "SC"
     }
 
-    input_folder = "images/"
-    output_folder = "pydicom-images-1/"
+    input_folder = "sample_dicoms/"
+    output_folder = "anonymized_output/"
     
     print("Starting DICOM anonymization with CSV configuration...")
     print(f"Input folder: {input_folder}")
     print(f"Output folder: {output_folder}")
-    print(f"Configuration: dicom-data-dict.csv")
+    print(f"Configuration: {CSV_CONFIG_PATH}")
     print(f"Custom overrides: {len(custom_type_ones)} tags")
     
     anonymize_folder(input_folder, output_folder, type_ones, type_ones_to_modify, type_twos, type_threes, custom_type_ones)
