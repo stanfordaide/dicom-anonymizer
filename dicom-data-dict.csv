@@ -259,3 +259,16 @@ RadiationSetting,1,General level of X-ray dose exposure,SC/GR,keep but populate 
 RadiationMode,3,Specifies X-ray radiation mode,[empty],remove
 ColumnAngulation,3,Angle of X-ray beam,[empty],remove
 OrganDose,3,Average organ dose value measured in dGy during image acquisition,[empty],remove
+InstitutionName,3,Institution where the equipment that produced the composite instances is located,Name of hospital or clinic,remove
+InstitutionAddress,3,Mailing address of the institution where the equipment is located,Street address of the institution,remove
+InstitutionalDepartmentName,3,Department in the institution where the equipment is located,RADIOLOGY,remove
+StationName,3,User defined name identifying the machine that produced the composite instances,XR-ROOM-3,remove
+PerformingPhysicianName,3,Name of the physician administering the series,DOE^JOHN^^MD,remove
+RequestingPhysician,3,Physician who requested the imaging service request,DOE^JOHN^^MD,remove
+OperatorsName,3,Name of the operator supporting the series,TECH^JONES,remove
+ProtocolName,3,User defined description of the conditions under which the series was performed,CHEST ROUTINE,remove
+RequestedProcedureDescription,3,Institution generated administrative description of the requested procedure,XR CHEST 2 VIEW,remove
+ImageComments,3,User defined comments about the image,[empty],remove
+DeviceSerialNumber,3,Manufacturer defined serial number of the equipment that produced the composite instances,SN-88213,remove
+PatientWeight,3,Weight of the patient in kilograms,68,remove
+PatientSize,3,Length or size of the patient in meters,1.7,remove
