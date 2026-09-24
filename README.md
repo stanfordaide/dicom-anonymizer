@@ -6,9 +6,14 @@ mapping the new filenames back to the originals.
 
 This tool reads [dicom-data-dict.csv](dicom-data-dict.csv)—a hand-compiled sheet of DICOM tags, their types, their meanings, and how to deal with PHI associated with them—to perform the correct action (keep, remove, hash, empty, etc.) on the metadata of DICOM files in order to correctly anonymize. We provide a full pipeline for anonymization of metadata, anonymization of filenames, and verification of anonymization.
 
-## Requirements
+## Setup
 
-Python 3.12, `pydicom` 3.x, `pandas`, `numpy`.
+The project ships a conda environment.
+
+```bash
+conda env create -f environment.yml
+conda activate dicom-anonymizer
+```
 
 ## Usage
 
@@ -130,6 +135,7 @@ CSV (e.g. a tag would end up containing the text `keep but populate with 0`).
 | `pipeline.py`                  | One command for all four stages. The normal entry point.                                                                                                                                             |
 | `anonymize.py`                 | Metadata anonymization.                                                                                                                                                                              |
 | `dicom-data-dict.csv`          | Tag-by-tag anonymization config.                                                                                                                                                                     |
+| `environment.yml`              | Conda environment definition. The primary dependency spec.                                                                                                                                           |
 | `sample/`                      | Test data and generated output, kept out of the project root.                                                                                                                                        |
 | `sample/make_sample_dicoms.py` | Generates synthetic test DICOMs (no real patient data) into `sample/sample_dicoms/`.                                                                                                                 |
 | `compile_metadata.py`          | Dumps every tag of every DICOM in a folder to a wide CSV. Generated the tag names used in `dicom-data-dict.csv`, hence the `_Seq0_` flattening convention. Runs as pipeline stage 4, and standalone. |

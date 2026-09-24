@@ -1,0 +1,23 @@
+# Conda environment for the DICOM anonymizer.
+#
+# Create it:   conda env create -f environment.yml
+# Activate it: conda activate dicom-anonymizer
+# Update it:   conda env update -f environment.yml --prune
+# Remove it:   conda env remove -n dicom-anonymizer
+#
+# Versions are pinned to the minor release rather than the exact patch, so bug fixes
+# come through but a breaking change cannot arrive unannounced. pydicom 3 in particular
+# is not a drop-in replacement for pydicom 2: save_as() validates differently and
+# enforce_file_format is required to write a conformant file, both of which this code
+# relies on.
+
+name: dicom-anonymizer
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.12
+  - pydicom=3.0.*
+  - pandas=2.2.*
+  - numpy=2.1.*
