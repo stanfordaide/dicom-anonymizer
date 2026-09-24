@@ -1,0 +1,6 @@
+old_filename,new_filename
+DOE_JANE_MRN4451102_chest_1.dcm,ANON-00000001.dcm
+DOE_JANE_MRN4451102_chest_2.dcm,ANON-00000002.dcm
+GARCIA_LUIS_MRN7782341.dcm,ANON-00000003.dcm
+edge_case_blank_fields.dcm,ANON-00000004.dcm
+patient_003_20240301.dcm,ANON-00000005.dcm
