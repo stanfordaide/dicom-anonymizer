@@ -1,0 +1,261 @@
+Tag,Type,Definition,Example,Action_to_Take
+SpecificCharacterSet,1,Character set that expands the Basic Graphic Set,"ISO_IR 100 (means Latin alphabet)",keep
+ImageType,3,Image identification characteristics,"['ORIGINAL', 'PRIMARY', '']",keep
+SOPClassUID,1,"Uniquely identifies SOP class (data class, identifies actions that can be done with the data like store/retrieve)",1.2.840.10008.5.1.4.1.1.1.1,keep
+SOPInstanceUID,1,Uniquely identifies SOP instance (instance of data within a dataset),1.2.840.4267.32.168089853718582359160026462211027553108,keep
+StudyDate,2,Date study started,20190520,empty
+SeriesDate,3,Date series started,20190520,remove
+AcquisitionDate,3,Date of data acquisition,20190520,remove
+ContentDate,1,Date when inventory collection began,20190520,keep but random jitter
+AccessionNumber,2,Identifies image service request,AY64a3475,empty
+Modality,1,Type of imaging,DX,keep
+ConversionType,1,Type of image conversion,WSD,keep
+PresentationIntentType,1,Intent for the image,FOR PRESENTATION/PROCESSING,keep
+Manufacturer,2,Manufacturer of equipment,GE MEDICAL SYSTEMS,empty
+ReferringPhysicianName,2,Name of patient's referring physician,filename.dcm,empty
+StudyDescription,3,Description of study,LPCH XR PELVIS 1 OR 2 VIEWS,keep
+ProcedureCodeSequence_Seq0_CodeValue,1,Identifies procedure,LPEL,keep
+ProcedureCodeSequence_Seq0_CodingSchemeDesignator,1,Identifies procedure,SECTRA,keep
+ProcedureCodeSequence_Seq0_CodeMeaning,1,Identifies procedure,LPCH XR PELVIS 1 OR 2 VIEWS,keep
+SeriesDescription,3,Description of series,Series 413,remove
+ManufacturerModelName,3,Model name of equipment used to produce image,Revolution XRd ADS_28.4,remove
+AnatomicRegionSequence_Seq0_CodeValue,1,Identifies anatomic region,T-D6000,keep
+AnatomicRegionSequence_Seq0_CodingSchemeDesignator,1,Identifies anatomic region,SNM3,keep
+AnatomicRegionSequence_Seq0_CodeMeaning,1,Identifies anatomic region,Pelvis,keep
+PatientName,2,Self-explanatory,AY649d925,empty
+PatientID,2,Identifier of patient,AY649d925,keep but hash
+PatientBirthDate,2,Self-explanatory,20161221,empty
+PatientSex,2,Self-explanatory,F,empty
+PatientAge,3,Self-explanatory,002Y,remove
+PatientIdentityRemoved,3,Self-explanatory,YES,remove
+BodyPartExamined,3,Self-explanatory,ABDOMEN_PELVIS_H,keep
+KVP,3,Peak kilo-voltage output of X-ray tech,62,keep
+SoftwareVersions,3,Software version of tech,Ads Application Package VERSION ADS_28.4,remove
+DistanceSourceToDetector,2,Distance from source to detector face,1020,keep
+DistanceSourceToPatient,3,Distance from source to center of field of view,954,keep
+FieldOfViewShape,3,Self-explanatory,RECTANGLE,keep
+FieldOfViewDimensions,3,Self-explanatory,"['199', '272']",keep
+ExposureTime,3,Time of x-ray exposure in milliseconds,7,keep
+XRayTubeCurrent,3,X-ray tube current in milliamps,200,keep
+Exposure,3,Exposure in milliamps,1,keep
+ExposureInuAs,3,Exposure in microamps,1420,remove
+ImageAndFluoroscopyAreaDoseProduct,3,X-ray dose,0.27307,keep
+FilterType,3,Type of filter in X-ray beam,NONE,keep
+ImagerPixelSpacing,3,Physical distance between center of each pixel (measured at front plane of Image Receptor),"['0.18705882', '0.18705882']",keep
+Grid,3,Identifies the grid,NONE,keep
+FocalSpots,3,Size of the focal spot in mm,0.6,keep
+AcquisitionDeviceProcessingCode,3,Device-specific processing code for the image,8#1561261111001009590100#30302020#10-200#20350#120250,keep
+RelativeXRayExposure,3,Manufacturer-specific relative X-ray exposure,105,remove
+PositionerSecondaryAngle,2,Position of X-ray image intensifier,0,empty
+CollimatorShape,1,"Shape of collimator (device, part of imaging tech, that narrows particles/beams)",POLYGONAL,keep
+VerticesOfThePolygonalCollimator,1C (required if polygonal),Coordinates of vertices of collimator,"['999', '1363', '1', '1363', '1', '1', '999', '1']",keep
+ViewPosition,2,Radiographic view associated with patient position,AP,keep
+Sensitivity,3,Manufacturer-specific sensitivity,0.090664104,remove
+DetectorTemperature,3,Temperature of detector in Celsius,30.4,keep
+DetectorType,2,Type of detector,SCINTILLATOR,keep
+DetectorConfiguration,3,Physical configuration of detector,AREA,keep
+DetectorBinning,3,"Number of active detectors used to generate a single pixel (row, column)","['1', '1']",keep
+DetectorElementPhysicalSize,3,Physical dimensions of each detector in mm,"['0.2', '0.2']",keep
+DetectorElementSpacing,3,(Not the same as Imager Pixel Spacing) Physical spacing between the center of each detector element,"['0.2', '0.2']",keep
+DetectorActiveShape,3,Shape of active area,RECTANGLE,keep
+DetectorActiveDimensions,3,Dimensions of active area in mm,"['409.6', '409.6']",keep
+FieldOfViewOrigin,1C (required if rotation or horizontal flip are present),Offset of field of view,"['511', '351']",keep
+FieldOfViewRotation,1C (required if horizontal flip present),Clockwise rotation in degrees of the FOV,0,keep
+FieldOfViewHorizontalFlip,1C (required if rotation present),Whether or not horizontal flip has been applied,NO,keep
+FilterThicknessMinimum,3,Minimum thickness in mm of X-ray absorbing material used in filters,0,keep
+FilterThicknessMaximum,3,Maximum thickness in mm of X-ray absorbing material used in filters,0,keep
+ExposureControlMode,3,Type of exposure control,AUTOMATIC,keep
+ExposureControlModeDescription,3,Description of mechanism of exposure control,AEC_center_cell,keep
+ContributingEquipmentSequence_Seq0_Manufacturer,1,Manufacturer that contributed to Composite Instance,SECTRA,keep but hash
+ContributingEquipmentSequence_Seq0_InstitutionName,3,Institution where equipment is installed,-,remove
+ContributingEquipmentSequence_Seq0_StationName,3,Name identifying machine,SECTRA_XD_07,remove
+ContributingEquipmentSequence_Seq0_ContributionDateTime,3,Date and time when equipment contributed to the Instance,"""20190522234953""",remove
+ContributingEquipmentSequence_Seq0_PurposeOfReferenceCodeSequence_Seq0_CodeValue,1,Purpose for which equipment is being used,DCM,keep
+ContributingEquipmentSequence_Seq0_PurposeOfReferenceCodeSequence_Seq0_CodingSchemeDesignator,1,Identifier of coding scheme,109103,keep
+ContributingEquipmentSequence_Seq0_PurposeOfReferenceCodeSequence_Seq0_CodeMeaning,1,Meaning of coding scheme,Modifying Equipment,keep
+StudyInstanceUID,1,Unique identifier for the study,1.2.840.4267.32.227251708175320976683574728630975573404,keep but hash
+SeriesInstanceUID,1,Unique identifier for the series,1.2.840.4267.32.43714369811782998540204597614070956791,keep but hash
+SeriesNumber,2,Number that identifies the series,413,empty
+InstanceNumber,3,Number that identifies the Composite Instance,1,remove
+PatientOrientation,Optional,Orientation of patient,"['L', 'F']",keep
+ImageLaterality,2,Laterality of body part examined,U,empty
+SamplesPerPixel,1,Number of samples (planes) in the image,1,keep
+PhotometricInterpretation,1,Intended interpretation for pixel data,MONOCHROME2,keep
+PlanarConfiguration,1C (required if samplesperpixel > 1),Indicates whether pixel data is encoded color-by-plane or color-by-pixel,0,keep
+Rows,1,Number of rows in image,999,keep
+Columns,1,Number of columns in image,1363,keep
+BitsAllocated,1,Number of bits allocated per pixel sample,16,keep
+BitsStored,1,Number of bits stored per pixel sample,14,keep
+HighBit,1,Most significant bit for pixel data,13,keep
+PixelRepresentation,1,Data representation of pixel samples,0,keep
+QualityControlImage,3,Whether or not quality control material is present,NO,keep
+BurnedInAnnotation,3,Whether or not image contains PHI burned in,NO,keep
+LongitudinalTemporalInformationModified,3,Whether or not date and time attributed have been modified,MODIFIED,keep
+PixelIntensityRelationship,3,Relationship between pixel sample values and X-ray beam intensity,LOG,keep
+PixelIntensityRelationshipSign,3,Sign of relationship between pixel sample values and X-ray beam intensity,-1,keep
+WindowCenter,1,Window center for display,"['5210', '5210', '5210']",keep
+WindowWidth,1,Window width for display,"['2228', '1671', '3342']",keep
+RescaleIntercept,1C (required if Modality LUT sequence is present),Intercept value in relationship between stored values and output units,0,keep
+RescaleSlope,1C (required if intercept is present),Slope value in relationship between stored values and output units,1,keep
+RescaleType,1C (required if intercept is present),Specifies output units of rescale intercept/slope,US,keep
+WindowCenterWidthExplanation,3,Free form explanation of width and center attributes,"['NORMAL', 'HARDER', 'SOFTER']",keep
+LossyImageCompression,3,Whether or not image has undergone lossy compression,0,keep
+VOILUTSequence_Seq0_LUTDescriptor,1,Specifies format of LUT (lookup table) data,"[16384, 0, 16]",keep
+VOILUTSequence_Seq0_LUTExplanation,1,Explains meaning of the LUT,NORMAL,keep
+VOILUTSequence_Seq0_LUTData,1,LUT data itself,"""[0, 0, 0, 0, 0, ... 0]""",keep
+VOILUTSequence_Seq1_LUTDescriptor,1,Specifies format of LUT (lookup table) data,"[16384, 0, 16]",keep
+VOILUTSequence_Seq1_LUTExplanation,1,Explains meaning of the LUT,HARDER,keep
+VOILUTSequence_Seq1_LUTData,1,LUT data itself,"""[0, 0, 0, 0, 0, ... 0]""",keep
+VOILUTSequence_Seq2_LUTDescriptor,1,Specifies format of LUT (lookup table) data,"[16384, 0, 16]",keep
+VOILUTSequence_Seq2_LUTExplanation,1,Explains meaning of the LUT,SOFTER,keep
+VOILUTSequence_Seq2_LUTData,1,LUT data itself,"""[0, 0, 0, 0, 0, ... 0]""",keep
+EntranceDose,3,Average entrance dose value,0,keep
+CommentsOnRadiationDose,3,User-defined comments on radiation dose encountered during creating image,100%,keep
+ViewCodeSequence_Seq0_CodeValue,1,Code value describing view of patient anatomy,R-10206,keep
+ViewCodeSequence_Seq0_CodingSchemeDesignator,1,Coding scheme designator describing view of patient anatomy,SNM3,keep
+ViewCodeSequence_Seq0_CodeMeaning,1,Meaning of code value,antero-posterior,keep
+ViewCodeSequence_Seq0_ViewModifierCodeSequence_Seq0_CodingSchemeDesignator,2,Sequence that provides modifiers for anatomy,SNM3,keep
+PatientOrientationCodeSequence_Seq0_CodeValue,1,Code value describing view of patient orientation,F-10450,keep
+PatientOrientationCodeSequence_Seq0_CodingSchemeDesignator,1,Coding scheme designator for code value describing view of patient orientation,SNM3,keep
+PatientOrientationCodeSequence_Seq0_CodeMeaning,1,Text that conveys meaning of coded entry,recumbent,keep
+PatientGantryRelationshipCodeSequence_Seq0_CodeValue,1,Describes orientation of patient with respect to gantry,F-10470,keep
+PatientGantryRelationshipCodeSequence_Seq0_CodingSchemeDesignator,1,Describes orientation of patient with respect to gantry,SNM3,keep
+PatientGantryRelationshipCodeSequence_Seq0_CodeMeaning,1,Describes orientation of patient with respect to gantry,head-first,keep
+PresentationLUTShape,1C (required if presentation LUT sequence absent),Specifies presentation LUT transformation,IDENTITY,keep
+AcquisitionDateTime,3,Date and time of acquisition of this instance,[empty],remove
+DetectorConditionsNominalFlag,3,Whether or not the detector is operating within normal tolerances during this image acquisition,,remove
+GridFocalDistance,3,Focal distance in mm of a FOCUSED grid,,remove
+RequestedProcedureCodeSequence_Seq0_CodeValue,2,Represents specific procedure that was requested,,empty
+RequestedProcedureCodeSequence_Seq0_CodingSchemeDesignator,2,Represents specific procedure that was requested,,empty
+RequestedProcedureCodeSequence_Seq0_CodeMeaning,2,Represents specific procedure that was requested,,empty
+PerformedProcedureStepStartDate,3,Date on which the Performed Procedure Step started,,remove
+PerformedProtocolCodeSequence_Seq0_CodeValue,3,Describes protocol performed,,remove
+PerformedProtocolCodeSequence_Seq0_CodingSchemeDesignator,3,Describes protocol performed,,remove
+PerformedProtocolCodeSequence_Seq0_CodeMeaning,3,Describes protocol performed,,remove
+PerformedProtocolCodeSequence_Seq1_CodeValue,3,Describes protocol performed,,remove
+PerformedProtocolCodeSequence_Seq1_CodingSchemeDesignator,3,Describes protocol performed,,remove
+PerformedProtocolCodeSequence_Seq1_CodeMeaning,3,Describes protocol performed,,remove
+IrradiationEventUID,3,Unique identifier of irridation events,1.3.6.1.4.1.14519.5.2.1.3098.4963.276083123358...,remove
+ExposureIndex,3,Measure of detector response to radiation,[empty],remove
+TargetExposureIndex,3,Target value used to calculate deviation index,[empty],remove
+DeviationIndex,3,Scaled representation of difference between exposure index and target index,[empty],remove
+FilterMaterial,1,X-ray absorbing material used in filter,,keep but populate with RHODIUM
+PixelSpacing,1C (required if image has been calibrated),Physical distance in the patient between center of each pixel,"[0.703125, 0.703125]",keep
+PixelSpacingCalibrationType,3,Type of correction against geometric scaling or calibration,,remove
+PixelSpacingCalibrationDescription,1C (required if calibration type is present),Free text description of pixel spacing calibration type,,remove
+EntranceDoseInmGy,3,Average entrance dose in mGy at patient surface,,remove
+SpatialResolution,3,Limiting resolution in mm of equipment,,remove
+TotalNumberOfExposures,3,Total number of exposures,,remove
+VOILUTFunction,3,Describes VOI LUT function to apply to window center and width,,remove
+PerformedProcedureStepEndDate,3,Date on which performed procedure step ended,20070119,remove
+PlacerOrderNumberImagingServiceRequest,3,Order number associated with service request,,remove
+ProcedureCodeSequence_Seq0_CodingSchemeVersion,3,Type of procedure performed,,remove
+PerformedProtocolCodeSequence_Seq2_CodeValue,3,Describes protocol performed,,remove
+PerformedProtocolCodeSequence_Seq2_CodingSchemeDesignator,3,Describes protocol performed,,remove
+PerformedProtocolCodeSequence_Seq2_CodeMeaning,3,Describes protocol performed,,remove
+PerformedProtocolCodeSequence_Seq3_CodeValue,3,Describes protocol performed,IMGXR0106,remove
+PerformedProtocolCodeSequence_Seq3_CodingSchemeDesignator,3,Describes protocol performed,L,remove
+PerformedProtocolCodeSequence_Seq3_CodeMeaning,3,Describes protocol performed,XR PELVIS 3 TO 5 VIEWS,remove
+PerformedProtocolCodeSequence_Seq4_CodeValue,3,Describes protocol performed,IMGXR0106,remove
+PerformedProtocolCodeSequence_Seq4_CodingSchemeDesignator,3,Describes protocol performed,L,remove
+PerformedProtocolCodeSequence_Seq4_CodeMeaning,3,Describes protocol performed,XR PELVIS 3 TO 5 VIEWS,remove
+PerformedProtocolCodeSequence_Seq5_CodeValue,3,Describes protocol performed,IMGXR0106,remove
+PerformedProtocolCodeSequence_Seq5_CodingSchemeDesignator,3,Describes protocol performed,L,remove
+PerformedProtocolCodeSequence_Seq5_CodeMeaning,3,Describes protocol performed,XR PELVIS 3 TO 5 VIEWS,remove
+PerformedProtocolCodeSequence_Seq0_CodingSchemeVersion,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq6_CodeValue,3,Describes protocol performed,IMGXR0106,remove
+PerformedProtocolCodeSequence_Seq6_CodingSchemeDesignator,3,Describes protocol performed,L,remove
+PerformedProtocolCodeSequence_Seq6_CodeMeaning,3,Describes protocol performed,XR PELVIS 3 TO 5 VIEWS,remove
+InstanceCreationDate,3,Date the SOP instance was created,[empty] - most are empty in our dataset,remove
+InstanceCreationTime,3,Time the SOP instance was created,[empty],remove
+PlateType,3,Label of the type of storage phosphor plates used in this Series,[empty],remove
+CassetteOrientation,3,Orientation of cassette (used to properly position image for display),[empty],remove
+CassetteSize,3,Size of cassette,[empty],remove
+ExposuresOnPlate,3,Total number of X-ray exposures made on plate,[empty],remove
+EstimatedRadiographicMagnificationFactor,3,Ratio of SID (Source Image Receptor Distance) over SOD (Source Object Distance),[empty],remove
+PositionerType,2,Type of positioner,MAMMOGRAPHIC,empty
+CollimatorLeftVerticalEdge,1C (required if collimator is RECTANGULAR),Location of left edge of collimator with respect to pixels,[empty],keep but populate with 0
+CollimatorRightVerticalEdge,1C (required if collimator is RECTANGULAR),Location of right edge of collimator with respect to pixels,[empty],keep but populate with 0
+CollimatorUpperHorizontalEdge,1C (required if collimator is RECTANGULAR),Location of upper edge of collimator with respect to pixels,[empty],keep but populate with 0
+CollimatorLowerHorizontalEdge,1C (required if collimator is RECTANGULAR),Location of lower edge of collimator with respect to pixels,[empty],keep but populate with 0
+DetectorMode,3,Text description of operating mode of detector,[empty],remove
+TimeOfLastDetectorCalibration,3,Time of last detector calibration,[empty],remove
+DetectorTimeSinceLastExposure,3,Time since last exposure of the detector in seconds,[empty],remove
+DetectorManufacturerName,3,Name of detector manufacturer,[empty],remove
+DetectorManufacturerModelName,3,Model name of detector,[empty],remove
+ExposureTimeInuS,3,Exposure time in microseconds,[empty],remove
+XRayTubeCurrentInuA,3,X-ray tube current in microamps,[empty],remove
+PerformedProtocolCodeSequence_Seq1_CodingSchemeVersion,,Describes protocol performed,[empty],remove
+DetectorDescription,3,Free text description of detector,[empty],remove
+CalibrationImage,3,Whether a reference image is included and was used for calibration,[empty],remove
+ExposureStatus,3,Whether the exposure was normally completed or not,[empty],remove
+ShutterShape,1,Shape of shutter,[empty],keep but populate with RECTANGULAR
+VerticesOfThePolygonalShutter,1C (required if shuttershape is POLYGONAL),Coordinates of vertices of polygonal shutter,[empty],remove
+PerformedProtocolCodeSequence_Seq7_CodeValue,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq7_CodingSchemeDesignator,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq7_CodeMeaning,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq8_CodeValue,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq8_CodingSchemeDesignator,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq8_CodeMeaning,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq9_CodeValue,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq9_CodingSchemeDesignator,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq9_CodeMeaning,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq10_CodeValue,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq10_CodingSchemeDesignator,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq10_CodeMeaning,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq11_CodeValue,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq11_CodingSchemeDesignator,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq11_CodeMeaning,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq12_CodeValue,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq12_CodingSchemeDesignator,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq12_CodeMeaning,3,Describes protocol performed,[empty],remove
+AnatomicRegionSequence_Seq0_MappingResource,3,Describes anatomic region in which protocol was performed,[empty],remove
+AnatomicRegionSequence_Seq0_ContextGroupVersion,3,Describes anatomic region in which protocol was performed,[empty],remove
+AnatomicRegionSequence_Seq0_ContextIdentifier,3,Describes anatomic region in which protocol was performed,[empty],remove
+ExposuresOnDetectorSinceLastCalibration,3,Total number of exposures that have been made on the detector since last calibrated,[empty],remove
+DetectorActiveTime,3,Time in milliseconds that detector is active to acquire image,[empty],remove
+ExposureInmAs,3,Exposure in milliamps,[empty],remove
+AcquisitionNumber,3,Identifies the single continuous gathering of data over a period of time that resulted in this instance,[empty],remove
+ImagesInAcquisition,3,Number of images that resulted from acquisition of data,[empty],remove
+PixelAspectRatio,1C (required if aspect ratio values not 1:1),Ratio of vertical size and horizontal size of pixels,[empty],remove
+SmallestImagePixelValue,3,Minimum actual pixel value in image,[empty],remove
+LargestImagePixelValue,3,Maximum actual pixel value in image,[empty],remove
+ExposedArea,3,Dimension of exposed area in detector plane,[empty],remove
+ViewCodeSequence_Seq0_MappingResource,1,Describes view of patient anatomy,[empty],keep
+ViewCodeSequence_Seq0_ContextGroupVersion,1,Describes view of patient anatomy,[empty],keep
+ViewCodeSequence_Seq0_ContextIdentifier,1,Describes view of patient anatomy,[empty],keep
+PatientOrientationCodeSequence_Seq0_MappingResource,2,Describes patient orientation,[empty],empty
+PatientOrientationCodeSequence_Seq0_ContextGroupVersion,2,Describes patient orientation,[empty],empty
+PatientOrientationCodeSequence_Seq0_ContextIdentifier,2,Describes patient orientation,[empty],empty
+PatientOrientationCodeSequence_Seq0_PatientOrientationModifierCodeSequence_Seq0_CodeValue,2,Describes patient orientation,[empty],empty
+PatientOrientationCodeSequence_Seq0_PatientOrientationModifierCodeSequence_Seq0_CodingSchemeDesignator,2,Describes patient orientation,[empty],empty
+PatientOrientationCodeSequence_Seq0_PatientOrientationModifierCodeSequence_Seq0_CodeMeaning,2,Describes patient orientation,[empty],empty
+PatientOrientationCodeSequence_Seq0_PatientOrientationModifierCodeSequence_Seq0_MappingResource,2,Describes patient orientation,[empty],empty
+PatientOrientationCodeSequence_Seq0_PatientOrientationModifierCodeSequence_Seq0_ContextGroupVersion,2,Describes patient orientation,[empty],empty
+PatientOrientationCodeSequence_Seq0_PatientOrientationModifierCodeSequence_Seq0_ContextIdentifier,2,Describes patient orientation,[empty],empty
+TimeOfLastCalibration,3,Time of last calibration,[empty],remove
+DistanceSourceToIsocenter,1,Distance from source to isocenter in mm,[empty],keep but populate all with 1
+IssuerOfPatientIDQualifiersSequence_Seq0_IdentifierTypeCode,3,Specifies identity of issuer of patient ID,[empty],remove
+PerformedProtocolCodeSequence_Seq2_CodingSchemeVersion,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq3_CodingSchemeVersion,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq4_CodingSchemeVersion,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq5_CodingSchemeVersion,3,Describes protocol performed,[empty],remove
+PerformedProtocolCodeSequence_Seq6_CodingSchemeVersion,3,Describes protocol performed,[empty],remove
+StudyStatusID,3,?,[empty],remove
+ImageDisplayFormat,3,?,[empty],remove
+AnnotationDisplayFormatID,3,?,[empty],remove
+FilmOrientation,3,?,[empty],remove
+BorderDensity,3,Border of empty film,[empty],remove
+Trim,1,Frame number,[empty],keep but populate all with 1
+PositionerPrimaryAngle,2,Position of X-ray intensifier about the patient,[empty],empty
+DetectorPrimaryAngle,3,Angle in degrees of X-ray beam in the row direction relative to normal to the detector plane,[empty],remove
+DetectorSecondaryAngle,3,Angle in degrees of X-ray beam in the column direction relative to normal to the detector plane,[empty],remove
+PhototimerSetting,3,Nominal percentage phototimer setting,[empty],remove
+TableMotion,2,Motion of table,STATIC/DYNAMIC,empty
+TableAngle,3,Angle of table plane in degrees relative to the horizontal (positive = upwards),[empty],remove
+TableType,3,Type of table,[empty],remove
+AveragePulseWidth,3,Average X-ray pulse width in millisecond,[empty],remove
+RadiationSetting,1,General level of X-ray dose exposure,SC/GR,keep but populate with random code string value
+RadiationMode,3,Specifies X-ray radiation mode,[empty],remove
+ColumnAngulation,3,Angle of X-ray beam,[empty],remove
+OrganDose,3,Average organ dose value measured in dGy during image acquisition,[empty],remove
