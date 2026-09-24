@@ -14,8 +14,8 @@
 # With no argument, writes to sample_dicoms/ next to this script, so it behaves the
 # same whether you run it from the repo root or from inside sample/.
 
+import argparse
 import os
-import sys
 
 import numpy as np
 import pydicom
@@ -167,6 +167,19 @@ def build_dataset(
         make_code_item("PROTO-3", "LPCHCODES", f"Acquired at {station}"),
     ])
 
+    # --- private vendor tags, the way a real scanner writes them ---
+    # Odd group number = private. Real files are full of these and they routinely carry
+    # PHI, so the strict allowlist has to clear them. One is a private *sequence* with
+    # PHI nested inside, which is the harder case.
+    block = ds.private_block(0x0009, "ACME_IMAGING", create=True)
+    block.add_new(0x01, 'LO', patient_name or "EMPTY")
+    block.add_new(0x02, 'LO', patient_id)
+    block.add_new(0x03, 'LO', f"Read by {physician} at LPCH")
+    private_item = Dataset()
+    private_item.PatientName = patient_name
+    private_item.AccessionNumber = accession
+    block.add_new(0x10, 'SQ', Sequence([private_item]))
+
     # --- minimal but valid image data (values are meaningless) ---
     ds.SamplesPerPixel = 1
     ds.PhotometricInterpretation = "MONOCHROME2"
@@ -236,7 +249,16 @@ SAMPLES = [
 
 def main():
     default_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_dicoms")
-    out_dir = sys.argv[1] if len(sys.argv) > 1 else default_dir
+    # argparse rather than reading sys.argv[1] directly: a bare sys.argv[1] treats any
+    # argument as the output folder, so `--help` silently created a folder named "--help"
+    parser = argparse.ArgumentParser(
+        description="Generate synthetic DICOM files for testing the anonymizer. "
+                    "All values are invented; no real patient data is involved.")
+    parser.add_argument("output_folder", nargs="?", default=default_dir,
+                        help="where to write the files (default: sample_dicoms/ beside "
+                             "this script)")
+    args = parser.parse_args()
+    out_dir = args.output_folder
     os.makedirs(out_dir, exist_ok=True)
 
     for filename, kwargs in SAMPLES:

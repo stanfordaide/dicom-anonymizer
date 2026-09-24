@@ -17,7 +17,7 @@
 # PARENT of the output folder, so it does not travel with the de-identified dataset.
 #
 # Usage:
-#   python rename_official_files.py <input_folder> <output_folder> [--mappings PATH] [--force]
+#   python rename_official_files.py <input_folder> <output_folder> [--mappings PATH]
 
 import argparse
 import csv
@@ -81,7 +81,7 @@ def write_mappings_csv(rows, path):
     return True
 
 
-def rename_folder(input_folder, output_folder, mappings_path=None, force=False):
+def rename_folder(input_folder, output_folder, mappings_path=None):
     """Copy input_folder to output_folder under anonymized filenames.
 
     Returns (mapping_rows, failures). mapping_rows is a list of
@@ -102,20 +102,17 @@ def rename_folder(input_folder, output_folder, mappings_path=None, force=False):
     # Refuse to mix two runs' files in one folder: the mapping would no longer
     # describe what is actually on disk. Never delete anything - say so and stop.
     if os.path.isdir(output_folder) and os.listdir(output_folder):
-        if not force:
-            print(f"ERROR: output folder is not empty: {output_folder}")
-            print("       Remove it, pick another folder, or pass --force to add to it.")
-            return None, None
-        print(f"WARNING: adding to a non-empty output folder: {output_folder}")
+        print(f"ERROR: output folder is not empty: {output_folder}")
+        print("       Remove it or pick another folder.")
+        return None, None
 
     # Checked before any copying, so a refusal leaves the filesystem untouched. The
     # mapping is the only route from an ANON name back to the original, so it is not
     # something to overwrite by accident.
-    if os.path.exists(mappings_path) and not force:
+    if os.path.exists(mappings_path):
         print(f"ERROR: a mapping CSV already exists: {mappings_path}")
         print("       It is the only way to reverse an earlier run's renaming.")
-        print("       Move or delete it, pass --mappings to write elsewhere,")
-        print("       or pass --force to overwrite it.")
+        print("       Move or delete it, or pass --mappings to write elsewhere.")
         return None, None
 
     # The mapping CSV re-identifies the dataset. Inside the output folder it would
@@ -141,12 +138,6 @@ def rename_folder(input_folder, output_folder, mappings_path=None, force=False):
     for index, (rel_path, source_path) in enumerate(dicom_files, start=1):
         new_name = make_anon_name(index)
         dest_path = os.path.join(output_folder, new_name)
-
-        # Should be impossible with a counter, but a stale --force run could collide
-        if os.path.exists(dest_path):
-            failures.append((rel_path, f"destination already exists: {new_name}"))
-            print(f"  SKIPPED {rel_path} -> {new_name} (destination exists)")
-            continue
 
         try:
             shutil.copy2(source_path, dest_path)
@@ -182,8 +173,6 @@ def main():
     parser.add_argument("--mappings", default=None,
                         help=f"path for the mapping CSV "
                              f"(default: {MAPPINGS_FILENAME} beside the output folder)")
-    parser.add_argument("--force", action="store_true",
-                        help="allow writing into a non-empty output folder")
     args = parser.parse_args()
 
     if not os.path.isdir(args.input_folder):
@@ -194,7 +183,7 @@ def main():
     print(f"Output folder: {args.output_folder}")
 
     mapping_rows, failures = rename_folder(
-        args.input_folder, args.output_folder, args.mappings, args.force)
+        args.input_folder, args.output_folder, args.mappings)
 
     if mapping_rows is None:
         return 1

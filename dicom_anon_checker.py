@@ -30,8 +30,9 @@ from datetime import datetime
 import pandas as pd
 import pydicom
 
-from anonymize import (BINARY_VRS, CSV_CONFIG_PATH, CUSTOM_TYPE_ONES, UID_PREFIX,
-                       normalize_tag_name, remove_lpch)
+from anonymize import (BINARY_VRS, CSV_CONFIG_PATH, CUSTOM_TYPE_ONES,
+                       NEVER_REMOVE_UNLISTED, UID_PREFIX, normalize_tag_name,
+                       remove_lpch)
 
 # anonymize.py's get_jittered_date() shifts by at most this many days either way
 MAX_JITTER_DAYS = 30
@@ -237,11 +238,14 @@ def check_file(original_path, anon_path, rules):
         if "LPCH" in str(element.value):
             lpch_hits.append((element.keyword or str(element.tag), str(element.value)))
 
-    # Tags surviving into the output with no rule covering them. This is how the
-    # missing top-level InstitutionName / PerformingPhysicianName rows were found.
-    unlisted = sorted(name for name in anon_flat
-                      if rules.get(normalize_tag_name(name)) is None
-                      and name != "PixelData")
+    # Tags surviving into the output with no rule covering them. anonymize.py's strict
+    # mode removes these, so anything left here is either a leak or was deliberately
+    # protected as bulk data. Sequence containers are excluded: no container appears in
+    # the CSV, only their children do, so they are legitimately unlisted.
+    unlisted = sorted(
+        name for name in anon_flat
+        if rules.get(normalize_tag_name(name)) is None
+        and name.split('_')[-1] not in NEVER_REMOVE_UNLISTED)
 
     return results, lpch_hits, unlisted
 
@@ -335,6 +339,12 @@ def check_folder(original_folder, anon_folder, mappings_path=None,
             for tag_name, action, _, detail in passes:
                 print(f"  pass  [{action}] {tag_name}: {detail}")
 
+        # A surviving unlisted tag is a failure, not a note: anonymize.py removes every
+        # tag the data dict has no rule for, so one being here means it leaked.
+        total_fail += len(unlisted)
+        for name in unlisted:
+            print(f"  FAIL  [unlisted] {name} has no rule in the data dict and "
+                  f"should have been removed")
         for name in unlisted:
             all_unlisted[name] = all_unlisted.get(name, 0) + 1
 
@@ -350,10 +360,10 @@ def check_folder(original_folder, anon_folder, mappings_path=None,
         print(f"Files missing:  {len(missing_files)}")
 
     if all_unlisted:
-        print(f"\nTags present in the output with no rule in the data dict "
+        print(f"\nTags that should have been removed but survived "
               f"({len(all_unlisted)}):")
-        print("  These are left untouched by design. Check none of them carry PHI -")
-        print("  this is exactly how the missing InstitutionName rows were found.")
+        print("  Every one of these is a potential PHI leak. This check is how the")
+        print("  missing InstitutionName rows and the private-tag leak were both found.")
         for name in sorted(all_unlisted):
             print(f"    {name}")
 

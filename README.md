@@ -40,19 +40,21 @@ be kept private. It is written beside the deliverable rather than inside it for
 exactly that reason.
 
 Options: `--config CSV` for a different data dict, `--mappings PATH` to put the key
-elsewhere, `--skip-check` to drop the verification stage, `--skip-metadata` to drop
-the audit CSV, `--no-intermediate` to delete the metadata-only folder on success,
-`--verbose` for every per-tag decision instead of a summary, and `--force` to overwrite
-a non-empty output folder or an existing mapping CSV.
+elsewhere, and `--verbose` for every per-tag decision instead of a summary.
+
+**Every run needs a clean destination.** Before doing any work the pipeline refuses to
+start if `anonymized/` or `anonymized_renamed/` already has anything in it, or if the
+mapping CSV already exists. Mixing two runs in one folder would leave a mapping CSV that
+no longer describes what is on disk, and overwriting a mapping CSV would destroy the only
+route from an `ANON-` name back to its original filename. There is no override: to re-run,
+delete the previous output folder (and its mapping CSV) yourself, or point the run at a
+different output folder. Nothing is ever deleted for you.
 
 The pipeline exits non-zero if any stage fails, and stops rather than continuing with
 incomplete output, so it can gate a larger process.
 
 The output folder must not be inside the input folder (or vice versa), and all three
-CLIs refuse that outright. It looks harmless — the first run succeeds — but a second
-run would walk its own output and re-anonymize already-anonymized files, hashing
-hashes and jittering already-jittered dates. Sibling folders under a shared parent are
-fine.
+CLIs refuse that outright. Sibling folders under a shared parent are fine.
 
 ### Running the stages individually
 
@@ -60,7 +62,7 @@ Each stage is also a standalone CLI, which is what the pipeline calls into:
 
 ```bash
 python anonymize.py <input_folder> <output_folder> [--config CSV]
-python rename_official_files.py <input_folder> <output_folder> [--mappings PATH] [--force]
+python rename_official_files.py <input_folder> <output_folder> [--mappings PATH]
 python dicom_anon_checker.py <original_folder> <anonymized_folder> [--mappings PATH] [--verbose]
 python compile_metadata.py <folder> [--output CSV]
 ```
@@ -71,6 +73,9 @@ python compile_metadata.py <folder> [--output CSV]
 python sample/make_sample_dicoms.py     # 5 synthetic DICOMs -> sample/sample_dicoms/
 python pipeline.py sample/sample_dicoms sample/pipeline_output
 ```
+
+`sample/pipeline_output` must not already exist from an earlier run — `rm -rf` it first,
+or pass a different folder.
 
 Or stage by stage, which is how the committed `sample/` folders were produced:
 
@@ -86,13 +91,13 @@ All commands are run from the repo root.
 ## How it works
 
 `dicom-data-dict.csv` is the config. One row per DICOM tag, with columns
-`Tag, Type, Definition, Example, Action_to_Take`. 273 rows total.
+`Tag, Type, Definition, Example, Action_to_Take`. 274 rows total.
 `anonymize.py` reads the `Action_to_Take` column and sorts every tag into:
 
 | `Action_to_Take` | Behavior                                                    |
 | ---------------- | ----------------------------------------------------------- |
 | `keep`           | left untouched (98 rows)                                    |
-| `empty`          | value replaced with `""` / `None` depending on VR (25 rows) |
+| `empty`          | value replaced with `""` / `None` depending on VR (26 rows) |
 | `remove`         | tag deleted entirely (136 rows)                             |
 | anything else    | treated as a custom action (14 rows)                        |
 
@@ -101,16 +106,17 @@ which supports `hash`, `random jitter`, or a literal replacement value. It lives
 module level so `dicom_anon_checker.py` can import it and verify against the same
 definitions instead of keeping its own copy.
 
+Any tag **not** in the CSV is removed. The CSV was built from the official DICOM tag
+list, so a tag absent from it is either a private vendor tag or something no valid file
+needs. **If this causes issues in the future (i.e. accidentally removing a tag that was necessary for a certain modality to compile), note that there is a set of explicitly allowed tags (NEVER_REMOVE_UNLISTED) in anonymize.py that will not be removed from the DICOMs, allowing for the customization of extra allowed tags.**
+
 Hashing is consistent within a run: the same `PatientID` always maps to the same
 hash, and the same `StudyInstanceUID`/`SeriesInstanceUID` always map to the same
 new UID, so studies and series stay grouped. Date jitter is ±30 days, chosen once
 per patient, so intervals within a patient are preserved.
 
 There is also a separate pass that strips the substring `LPCH` from _every_ text
-value in the file, regardless of what the CSV says. "Text value" includes the types
-pydicom returns that are not plain strings — `PersonName` for VR `PN` and `MultiValue`
-for multi-valued tags — since person-name fields are exactly where names hide. Binary
-values such as pixel data are skipped.
+value in the file. Binary values such as pixel data are skipped.
 
 ### Note on the `Action_to_Take` values
 
@@ -118,9 +124,7 @@ The 14 custom rows use prose values like `keep but populate with 0` and
 `keep but hash`. `get_tags_of_types()` doesn't parse these — it only recognizes
 the exact strings `keep`, `empty` and `remove`, and passes anything else through
 as a literal replacement value. The `CUSTOM_TYPE_ONES` dict is what actually defines
-those 14 behaviors, and it's checked first, so the prose strings never reach the file.
-
-**This is intentional** — the CSV is the human-readable record of intent, and
+those 14 behaviors. **This is intentional** — the CSV is the human-readable record of intent, and
 `CUSTOM_TYPE_ONES` is the machine-readable implementation. The consequence to be
 aware of: the two lists must be kept in sync by hand. If you add a new custom
 action to the CSV without adding a matching entry to `CUSTOM_TYPE_ONES`, that
@@ -155,5 +159,7 @@ They're built to exercise the interesting paths:
 - `LPCH` substrings in 16 different elements, including inside sequences
 - two files sharing a `PatientID`/`StudyInstanceUID`/`SeriesInstanceUID`, to check
   hashing stays consistent across files
+- private vendor tags (odd group `0009`) carrying a name and MRN, plus a private
+  _sequence_ with PHI nested inside it, so the strict allowlist is actually exercised
 - one file (`edge_case_blank_fields.dcm`) with blank values throughout
 - filenames that themselves contain PHI

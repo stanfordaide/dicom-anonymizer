@@ -272,3 +272,4 @@ ImageComments,3,User defined comments about the image,[empty],remove
 DeviceSerialNumber,3,Manufacturer defined serial number of the equipment that produced the composite instances,SN-88213,remove
 PatientWeight,3,Weight of the patient in kilograms,68,remove
 PatientSize,3,Length or size of the patient in meters,1.7,remove
+StudyID,2,User or equipment generated identifier of the study,ST-0001,empty

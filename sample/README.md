@@ -3,7 +3,8 @@
 **Every value in these files is completely synthetic.** There is no real patient
 data here. The patient names, MRNs, accession numbers, physician names, dates and
 institution names are all invented, and the pixel data is a generated gradient
-and not a real image.
+and not a real image. The files also carry fake private vendor tags holding a name and
+MRN, so the anonymizer's handling of private tags is exercised by the sample run.
 
 - `sample_dicoms/` — 5 synthetic DICOMs, used as input
 - `anonymized_output/` — the result of running the anonymizer over them

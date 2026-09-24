@@ -162,8 +162,19 @@ def normalize_keys(rules):
     return {normalize_tag_name(k) for k in rules}
 
 
+# Tags never deleted for want of a CSV row. These are bulk data,
+# not identifiers: deleting PixelData would throw away the image itself, and the CSV has
+# no row for it. This only guards the "not in the CSV" path - an explicit `remove` in the
+# CSV is still obeyed.
+NEVER_REMOVE_UNLISTED = {
+    "PixelData", "FloatPixelData", "DoubleFloatPixelData", "PixelDataProviderURL",
+    "OverlayData", "WaveformData", "EncapsulatedDocument", "CurveData",
+    "SpectroscopyData",
+}
+
+
 def process_dataset(ds, prefix, type_ones, type_ones_to_modify, type_twos, type_threes,
-                    custom_type_ones, patient_id):
+                    custom_type_ones, patient_id, known_keys, removed_unlisted=None):
     """Apply the CSV rules to one dataset level, recursing into sequences.
 
     prefix builds up the same flattened name the CSV uses, so nested tags such as
@@ -171,6 +182,11 @@ def process_dataset(ds, prefix, type_ones, type_ones_to_modify, type_twos, type_
     Removals are collected per level and deleted from the dataset that owns the
     element - deleting a nested element's tag from the top-level dataset would either
     do nothing or delete an unrelated element that shares the tag number.
+
+    known_keys is the set of every tag the CSV has a rule for. Any tag outside it is
+    removed: the CSV was built from the official tag list, so anything absent from it is
+    either a private vendor tag or something no valid file needs. Names of removed
+    unlisted tags are appended to removed_unlisted for reporting.
     """
     elements_to_remove = []
 
@@ -185,10 +201,20 @@ def process_dataset(ds, prefix, type_ones, type_ones_to_modify, type_twos, type_
                 elements_to_remove.append(element.tag)
                 print(f"Marked sequence for removal: {full_name} ({element.tag})")
             else:
+                # Always descend rather than deleting the container. No sequence
+                # container appears in the CSV, only their children do, so deleting
+                # unlisted containers outright would destroy tags marked `keep`.
                 for i, item in enumerate(element.value):
                     process_dataset(item, f"{full_name}_Seq{i}_", type_ones,
                                     type_ones_to_modify, type_twos, type_threes,
-                                    custom_type_ones, patient_id)
+                                    custom_type_ones, patient_id, known_keys,
+                                    removed_unlisted)
+                # A container that is unlisted and now completely empty held nothing
+                # the CSV sanctioned - this is what clears private vendor sequences.
+                if (key not in known_keys
+                        and all(len(item) == 0 for item in element.value)):
+                    elements_to_remove.append(element.tag)
+                    print(f"Marked empty unlisted sequence for removal: {full_name}")
             continue
 
         if hasattr(element, 'value') and element.value is not None:
@@ -221,15 +247,23 @@ def process_dataset(ds, prefix, type_ones, type_ones_to_modify, type_twos, type_
                 elements_to_remove.append(element.tag)
                 print(f"Marked for removal: {full_name} ({element.tag})")
 
-            # For all other tags (not in CSV), do nothing - leave as-is.
-            # This includes PixelData and any other tag the CSV does not mention.
+            # No rule in the CSV, so remove it - see known_keys in the docstring.
             else:
-                pass
+                if keyword not in NEVER_REMOVE_UNLISTED:
+                    elements_to_remove.append(element.tag)
+                    if removed_unlisted is not None:
+                        removed_unlisted.append(full_name)
+                    private = " (private)" if element.tag.group % 2 == 1 else ""
+                    print(f"Removed unlisted tag{private}: {full_name} ({element.tag})")
 
         else:
-            # Empty elements - only remove if explicitly in type_threes list
+            # Empty elements: removed if the CSV says so, or if there is no rule at all
             if key in type_threes:
                 elements_to_remove.append(element.tag)
+            elif keyword not in NEVER_REMOVE_UNLISTED and key not in known_keys:
+                elements_to_remove.append(element.tag)
+                if removed_unlisted is not None:
+                    removed_unlisted.append(full_name)
 
     # Remove only the explicitly marked elements, from this dataset level
     for tag in elements_to_remove:
@@ -241,7 +275,8 @@ def process_dataset(ds, prefix, type_ones, type_ones_to_modify, type_twos, type_
                 print(f"Error removing tag {tag}: {e}")
 
 
-def anonymize_dicom(input_path, output_path, type_ones, type_ones_to_modify, type_twos, type_threes, custom_type_ones):
+def anonymize_dicom(input_path, output_path, type_ones, type_ones_to_modify, type_twos,
+                    type_threes, custom_type_ones):
     """Anonymize a single DICOM file based on configuration.
 
     Returns True on success, False if the file could not be anonymized or written.
@@ -275,9 +310,15 @@ def anonymize_dicom(input_path, output_path, type_ones, type_ones_to_modify, typ
             element.value = clean_lpch_value(element.value)
             print(f"LPCH cleaned from {element.keyword or element.tag}: '{original_value}' -> '{element.value}'")
 
-        # SECOND PASS: Handle anonymization by type - ONLY for tags explicitly listed in CSV
+        # SECOND PASS: apply the CSV rules. known_keys is every tag the CSV covers, so
+        # that anything outside it can be removed.
+        removed_unlisted = []
+        known_keys = (set(type_ones) | set(type_twos) | set(type_threes)
+                      | set(type_ones_to_modify) | set(custom_type_ones))
         process_dataset(ds, "", type_ones, type_ones_to_modify, type_twos, type_threes,
-                        custom_type_ones, patient_id)
+                        custom_type_ones, patient_id, known_keys, removed_unlisted)
+        if removed_unlisted:
+            print(f"Removed {len(removed_unlisted)} tag(s) with no rule in the data dict")
 
         # Save anonymized DICOM. Written to a temp path first and moved into place only
         # on success: pydicom validates values during write, so a bad value would
@@ -299,7 +340,8 @@ def anonymize_dicom(input_path, output_path, type_ones, type_ones_to_modify, typ
         return False
 
 
-def anonymize_folder(input_folder, output_folder, type_ones, type_ones_to_modify, type_twos, type_threes, custom_type_ones):
+def anonymize_folder(input_folder, output_folder, type_ones, type_ones_to_modify,
+                     type_twos, type_threes, custom_type_ones):
     """Anonymize all DICOM files in a folder"""
     
     input_path = Path(input_folder)
@@ -330,7 +372,8 @@ def anonymize_folder(input_folder, output_folder, type_ones, type_ones_to_modify
         output_file.parent.mkdir(parents=True, exist_ok=True)
         
         print(f"\nProcessing {i+1}/{len(dicom_files)}: {rel_path}")
-        if anonymize_dicom(dicom_file, str(output_file), type_ones, type_ones_to_modify, type_twos, type_threes, custom_type_ones):
+        if anonymize_dicom(dicom_file, str(output_file), type_ones, type_ones_to_modify,
+                           type_twos, type_threes, custom_type_ones):
             succeeded += 1
         else:
             failed.append(rel_path)
@@ -424,6 +467,7 @@ def anonymize(input_folder, output_folder, config_path=CSV_CONFIG_PATH):
     print(f"Output folder: {output_folder}")
     print(f"Configuration: {config_path}")
     print(f"Custom overrides: {len(CUSTOM_TYPE_ONES)} tags")
+    print("Tags with no data dict rule: removed")
 
     return anonymize_folder(input_folder, output_folder, type_ones, type_ones_to_modify,
                             type_twos, type_threes, CUSTOM_TYPE_ONES)
