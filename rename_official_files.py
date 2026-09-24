@@ -25,6 +25,8 @@ import os
 import shutil
 import sys
 
+from anonymize import folders_overlap
+
 MAPPINGS_FILENAME = "filename_mappings.csv"
 ANON_PREFIX = "ANON-"
 ANON_DIGITS = 8
@@ -88,6 +90,14 @@ def rename_folder(input_folder, output_folder, mappings_path=None, force=False):
     """
     if mappings_path is None:
         mappings_path = default_mappings_path(output_folder)
+
+    # Copying into the input folder would make a later run re-ingest its own output
+    if folders_overlap(input_folder, output_folder):
+        print("ERROR: the output folder is inside the input folder (or vice versa):")
+        print(f"       input:  {input_folder}")
+        print(f"       output: {output_folder}")
+        print("       Re-running would re-process the output. Use a separate folder.")
+        return None, None
 
     # Refuse to mix two runs' files in one folder: the mapping would no longer
     # describe what is actually on disk. Never delete anything - say so and stop.

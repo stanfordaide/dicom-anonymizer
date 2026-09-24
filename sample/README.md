@@ -14,17 +14,22 @@ All of these are regenerated output. To rebuild them from scratch, run from the
 repo root:
 
 ```bash
-python sample/make_sample_dicoms.py   # writes sample_dicoms/
-python anonymize.py                   # writes anonymized_output/
-# writes anonymized_renamed_output/ and filename_mappings.csv
+python sample/make_sample_dicoms.py     # writes sample_dicoms/
+python anonymize.py sample/sample_dicoms sample/anonymized_output
 python rename_official_files.py sample/anonymized_output sample/anonymized_renamed_output
-# verify the result
 python dicom_anon_checker.py sample/sample_dicoms sample/anonymized_renamed_output \
     --mappings sample/filename_mappings.csv
 ```
 
-Note that the last step refuses to overwrite an existing `anonymized_renamed_output/` or
-`filename_mappings.csv`, so delete those first when regenerating.
+Delete `sample_dicoms/`, `anonymized_output/`, `anonymized_renamed_output/` and
+`filename_mappings.csv` first, since the rename step refuses to overwrite them.
+
+The same thing in one command, writing to a separate folder so it does not collide
+with the committed output above:
+
+```bash
+python pipeline.py sample/sample_dicoms sample/pipeline_output
+```
 
 On a real dataset, `filename_mappings.csv` is the re-identification key and must be
 kept separate from the anonymized files. Here it maps synthetic names to synthetic

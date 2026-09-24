@@ -19,5 +19,9 @@ env/
 filename_mappings.csv
 !sample/filename_mappings.csv
 
+# Scratch output from running pipeline.py against the sample data. It duplicates the
+# committed sample/anonymized_* folders, so there is no reason to track a second copy.
+sample/pipeline_output/
+
 # Partial files left behind by an interrupted rename
 *.dcm.partial

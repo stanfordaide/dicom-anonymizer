@@ -1,3 +1,6 @@
+import argparse
+import sys
+
 import pandas as pd
 import pydicom
 import os
@@ -395,19 +398,64 @@ CUSTOM_TYPE_ONES = {
 # The prefix get_consistent_uid() generates replacement UIDs under
 UID_PREFIX = "1.2.840.113619."
 
-if __name__ == "__main__":
-    # get info on what to do with each tag
-    type_ones, type_ones_to_modify, type_twos, type_threes = get_tags_of_types(CSV_CONFIG_PATH)
+def folders_overlap(input_folder, output_folder):
+    """True if one folder contains the other, or they are the same folder.
 
-    custom_type_ones = CUSTOM_TYPE_ONES
+    Writing output inside the input folder is a quiet trap: the first run looks fine,
+    but a second run walks its own output and re-anonymizes already-anonymized files -
+    hashing hashes, jittering jittered dates - and the file count grows every time.
+    Every entry point refuses this rather than letting it happen.
+    """
+    a = os.path.abspath(input_folder)
+    b = os.path.abspath(output_folder)
+    return a == b or os.path.commonpath([a, b]) in (a, b)
 
-    input_folder = "sample/sample_dicoms/"
-    output_folder = "sample/anonymized_output/"
-    
+
+def anonymize(input_folder, output_folder, config_path=CSV_CONFIG_PATH):
+    """Anonymize every DICOM in input_folder into output_folder.
+
+    Returns (succeeded, failed) from anonymize_folder, so callers such as the pipeline
+    orchestrator can report honestly and stop on failure.
+    """
+    type_ones, type_ones_to_modify, type_twos, type_threes = get_tags_of_types(config_path)
+
     print("Starting DICOM anonymization with CSV configuration...")
     print(f"Input folder: {input_folder}")
     print(f"Output folder: {output_folder}")
-    print(f"Configuration: {CSV_CONFIG_PATH}")
-    print(f"Custom overrides: {len(custom_type_ones)} tags")
-    
-    anonymize_folder(input_folder, output_folder, type_ones, type_ones_to_modify, type_twos, type_threes, custom_type_ones)
+    print(f"Configuration: {config_path}")
+    print(f"Custom overrides: {len(CUSTOM_TYPE_ONES)} tags")
+
+    return anonymize_folder(input_folder, output_folder, type_ones, type_ones_to_modify,
+                            type_twos, type_threes, CUSTOM_TYPE_ONES)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Anonymize DICOM metadata according to dicom-data-dict.csv. "
+                    "Filenames are preserved; use rename_official_files.py to anonymize those.")
+    parser.add_argument("input_folder", help="folder of DICOM files to anonymize")
+    parser.add_argument("output_folder",
+                        help="folder to write anonymized files into, preserving structure")
+    parser.add_argument("--config", default=CSV_CONFIG_PATH,
+                        help="data dict CSV (default: dicom-data-dict.csv beside this script)")
+    args = parser.parse_args()
+
+    if not os.path.isdir(args.input_folder):
+        print(f"ERROR: input folder does not exist: {args.input_folder}")
+        return 1
+    if not os.path.isfile(args.config):
+        print(f"ERROR: config CSV does not exist: {args.config}")
+        return 1
+    if folders_overlap(args.input_folder, args.output_folder):
+        print(f"ERROR: the output folder is inside the input folder (or vice versa):")
+        print(f"       input:  {args.input_folder}")
+        print(f"       output: {args.output_folder}")
+        print("       Re-running would re-anonymize the output. Use a separate folder.")
+        return 1
+
+    _, failed = anonymize(args.input_folder, args.output_folder, args.config)
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
