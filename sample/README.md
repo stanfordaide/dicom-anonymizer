@@ -9,6 +9,7 @@ and not a real image.
 - `anonymized_output/` — the result of running the anonymizer over them
 - `anonymized_renamed_output/` — the same files with filenames anonymized to `ANON-XXXXXXXX.dcm`
 - `filename_mappings.csv` — maps each `ANON-` name back to its original filename
+- `anonymized_metadata.csv` — every tag of the anonymized output, one row per file
 
 All of these are regenerated output. To rebuild them from scratch, run from the
 repo root:
@@ -19,6 +20,8 @@ python anonymize.py sample/sample_dicoms sample/anonymized_output
 python rename_official_files.py sample/anonymized_output sample/anonymized_renamed_output
 python dicom_anon_checker.py sample/sample_dicoms sample/anonymized_renamed_output \
     --mappings sample/filename_mappings.csv
+python compile_metadata.py sample/anonymized_renamed_output \
+    --output sample/anonymized_metadata.csv
 ```
 
 Delete `sample_dicoms/`, `anonymized_output/`, `anonymized_renamed_output/` and

@@ -12,19 +12,21 @@ Python 3.12, `pydicom` 3.x, `pandas`, `numpy`.
 
 ## Usage
 
-One command for the whole thing — anonymize metadata, anonymize filenames, verify:
+One command for the whole thing — anonymize metadata, anonymize filenames, verify, and
+compile a metadata audit CSV:
 
 ```bash
 python pipeline.py <input_folder> <output_folder>
 ```
 
-That produces three things inside the output folder:
+That produces four things inside the output folder:
 
 ```
 <output_folder>/
-  anonymized/             metadata anonymized, original filenames (intermediate)
-  anonymized_renamed/     the deliverable: ANON-XXXXXXXX.dcm, flattened
-  filename_mappings.csv   the re-identification key
+  anonymized/                metadata anonymized, original filenames (intermediate)
+  anonymized_renamed/        the deliverable: ANON-XXXXXXXX.dcm, flattened
+  filename_mappings.csv      the re-identification key
+  anonymized_metadata.csv    every tag of the output, one row per file, for auditing
 ```
 
 **Only `anonymized_renamed/` is shareable.** `filename_mappings.csv` maps every
@@ -33,10 +35,10 @@ be kept private. It is written beside the deliverable rather than inside it for
 exactly that reason.
 
 Options: `--config CSV` for a different data dict, `--mappings PATH` to put the key
-elsewhere, `--skip-check` to drop the verification stage, `--no-intermediate` to
-delete the metadata-only folder on success, `--verbose` for every per-tag decision
-instead of a summary, and `--force` to overwrite a non-empty output folder or an
-existing mapping CSV.
+elsewhere, `--skip-check` to drop the verification stage, `--skip-metadata` to drop
+the audit CSV, `--no-intermediate` to delete the metadata-only folder on success,
+`--verbose` for every per-tag decision instead of a summary, and `--force` to overwrite
+a non-empty output folder or an existing mapping CSV.
 
 The pipeline exits non-zero if any stage fails, and stops rather than continuing with
 incomplete output, so it can gate a larger process.
@@ -55,6 +57,7 @@ Each stage is also a standalone CLI, which is what the pipeline calls into:
 python anonymize.py <input_folder> <output_folder> [--config CSV]
 python rename_official_files.py <input_folder> <output_folder> [--mappings PATH] [--force]
 python dicom_anon_checker.py <original_folder> <anonymized_folder> [--mappings PATH] [--verbose]
+python compile_metadata.py <folder> [--output CSV]
 ```
 
 ### Trying it on the sample data
@@ -122,17 +125,16 @@ CSV (e.g. a tag would end up containing the text `keep but populate with 0`).
 
 ## Files
 
-| File                           | Purpose                                                                                                                                                                                |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pipeline.py`                  | One command for all three stages. The normal entry point.                                                                                                                              |
-| `anonymize.py`                 | Metadata anonymization.                                                                                                                                                                |
-| `dicom-data-dict.csv`          | Tag-by-tag anonymization config.                                                                                                                                                       |
-| `sample/`                      | Test data and generated output, kept out of the project root.                                                                                                                          |
-| `sample/make_sample_dicoms.py` | Generates synthetic test DICOMs (no real patient data) into `sample/sample_dicoms/`.                                                                                                   |
-| `get_metadata.py`              | Dumps every tag of every DICOM in a folder to a wide CSV. Generated the tag names used in `dicom-data-dict.csv`, hence the `_Seq0_` flattening convention. Useful for auditing output. |
-| `check_metadata.py`            | Inspect a single tag in one file or across a folder. Debugging helper.                                                                                                                 |
-| `dicom_anon_checker.py`        | Verifies anonymization: checks every data dict rule was honored, reports to the terminal, exits non-zero on failure. Has its own CLI.                                                  |
-| `rename_official_files.py`     | Filename anonymization: copies a folder to `ANON-XXXXXXXX.dcm` names and writes the mapping CSV. Has its own CLI.                                                                      |
+| File                           | Purpose                                                                                                                                                                                              |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pipeline.py`                  | One command for all four stages. The normal entry point.                                                                                                                                             |
+| `anonymize.py`                 | Metadata anonymization.                                                                                                                                                                              |
+| `dicom-data-dict.csv`          | Tag-by-tag anonymization config.                                                                                                                                                                     |
+| `sample/`                      | Test data and generated output, kept out of the project root.                                                                                                                                        |
+| `sample/make_sample_dicoms.py` | Generates synthetic test DICOMs (no real patient data) into `sample/sample_dicoms/`.                                                                                                                 |
+| `compile_metadata.py`          | Dumps every tag of every DICOM in a folder to a wide CSV. Generated the tag names used in `dicom-data-dict.csv`, hence the `_Seq0_` flattening convention. Runs as pipeline stage 4, and standalone. |
+| `dicom_anon_checker.py`        | Verifies anonymization: checks every data dict rule was honored, reports to the terminal, exits non-zero on failure. Has its own CLI.                                                                |
+| `rename_official_files.py`     | Filename anonymization: copies a folder to `ANON-XXXXXXXX.dcm` names and writes the mapping CSV. Has its own CLI.                                                                                    |
 
 ## Test data
 

@@ -3,6 +3,7 @@
 #   1. anonymize metadata   (anonymize.py)
 #   2. anonymize filenames  (rename_official_files.py)
 #   3. verify the result    (dicom_anon_checker.py)
+#   4. compile a metadata CSV of the output for auditing (compile_metadata.py)
 #
 # Usage:
 #   python pipeline.py <input_folder> <output_folder> [options]
@@ -12,6 +13,7 @@
 #   <output_folder>/anonymized/           metadata anonymized, original filenames
 #   <output_folder>/anonymized_renamed/   final deliverable: ANON- names, flattened
 #   <output_folder>/filename_mappings.csv the re-identification key
+#   <output_folder>/anonymized_metadata.csv every tag of the output, for auditing
 #
 # Only anonymized_renamed/ is the shareable artifact. The mapping CSV sits beside it
 # rather than inside it precisely so it does not get shared along with the data.
@@ -27,11 +29,13 @@ import shutil
 import sys
 
 from anonymize import CSV_CONFIG_PATH, anonymize, folders_overlap
+from compile_metadata import extract_all_dicom_metadata
 from dicom_anon_checker import check_folder
 from rename_official_files import MAPPINGS_FILENAME, rename_folder
 
 ANON_SUBDIR = "anonymized"
 RENAMED_SUBDIR = "anonymized_renamed"
+METADATA_FILENAME = "anonymized_metadata.csv"
 
 
 def banner(step, total, title):
@@ -59,14 +63,15 @@ def maybe_quiet(quiet):
 
 def run_pipeline(input_folder, output_folder, config_path=CSV_CONFIG_PATH,
                  mappings_path=None, force=False, skip_check=False,
-                 keep_intermediate=True, verbose=False):
+                 skip_metadata=False, keep_intermediate=True, verbose=False):
     """Run all three stages. Returns an exit code: 0 on success, 1 on any failure."""
     anon_dir = os.path.join(output_folder, ANON_SUBDIR)
     renamed_dir = os.path.join(output_folder, RENAMED_SUBDIR)
     if mappings_path is None:
         mappings_path = os.path.join(output_folder, MAPPINGS_FILENAME)
+    metadata_path = os.path.join(output_folder, METADATA_FILENAME)
 
-    total_steps = 2 if skip_check else 3
+    total_steps = 2 + (0 if skip_check else 1) + (0 if skip_metadata else 1)
 
     print("=" * 74)
     print("DICOM ANONYMIZATION PIPELINE")
@@ -76,6 +81,8 @@ def run_pipeline(input_folder, output_folder, config_path=CSV_CONFIG_PATH,
     print(f"  metadata only:  {anon_dir}")
     print(f"  final output:   {renamed_dir}")
     print(f"  mapping key:    {mappings_path}")
+    if not skip_metadata:
+        print(f"  metadata audit: {metadata_path}")
     print(f"Config:           {config_path}")
 
     # Output inside the input folder is the trap folders_overlap() describes: the first
@@ -147,6 +154,18 @@ def run_pipeline(input_folder, output_folder, config_path=CSV_CONFIG_PATH,
         problems = check_folder(input_folder, renamed_dir, mappings_path,
                                 config_path, verbose)
 
+    # --- Stage 4: metadata audit ---------------------------------------------
+    # Compiled from the FINAL output, never the input: the same CSV built from
+    # non-anonymized files would be a spreadsheet full of PHI.
+    if skip_metadata:
+        print("\nSkipping the metadata audit (--skip-metadata).")
+    else:
+        banner(total_steps, total_steps, "Compiling a metadata audit CSV")
+        with maybe_quiet(not verbose):
+            metadata_df = extract_all_dicom_metadata(renamed_dir, metadata_path)
+        print(f"{metadata_df.shape[0]} file(s), {metadata_df.shape[1] - 1} tag(s) "
+              f"-> {metadata_path}")
+
     # --- Cleanup -------------------------------------------------------------
     if not keep_intermediate:
         shutil.rmtree(anon_dir, ignore_errors=True)
@@ -159,6 +178,8 @@ def run_pipeline(input_folder, output_folder, config_path=CSV_CONFIG_PATH,
     print(f"Files processed:  {succeeded}")
     print(f"Final output:     {renamed_dir}")
     print(f"Mapping key:      {mappings_path}")
+    if not skip_metadata:
+        print(f"Metadata audit:   {metadata_path}")
     if keep_intermediate:
         print(f"Intermediate:     {anon_dir}")
     if skip_check:
@@ -195,6 +216,8 @@ def main():
                         help="overwrite a non-empty output folder or existing mapping CSV")
     parser.add_argument("--skip-check", action="store_true",
                         help="do not run the verification stage")
+    parser.add_argument("--skip-metadata", action="store_true",
+                        help="do not compile the metadata audit CSV")
     parser.add_argument("--no-intermediate", action="store_true",
                         help="delete the metadata-only folder once the run succeeds")
     parser.add_argument("--verbose", action="store_true",
@@ -210,7 +233,7 @@ def main():
 
     return run_pipeline(args.input_folder, args.output_folder, args.config,
                         args.mappings, args.force, args.skip_check,
-                        not args.no_intermediate, args.verbose)
+                        args.skip_metadata, not args.no_intermediate, args.verbose)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,27 @@
-import pydicom
-import os
-import pandas as pd
+# Compile every DICOM tag from every file in a folder into one wide CSV: one row per
+# file, one column per tag. Large binary fields (pixel data, overlays) are skipped.
+#
+# Useful for auditing what a dataset actually contains - it is how the tag names in
+# dicom-data-dict.csv were generated, hence that file's ContributingEquipmentSequence_Seq0_*
+# flattening convention.
+#
+# Usage:
+#   python compile_metadata.py <folder> [--output CSV]
+#
+# Note that on a non-anonymized folder the resulting CSV contains all the PHI in those
+# files. Treat it with the same care as the DICOMs themselves.
 
-def extract_all_dicom_metadata(folder_path, output_csv="all_dicom_metadata_3.csv"):
+import argparse
+import os
+import sys
+
+import pandas as pd
+import pydicom
+
+DEFAULT_OUTPUT = "dicom_metadata.csv"
+
+
+def extract_all_dicom_metadata(folder_path, output_csv=DEFAULT_OUTPUT):
     """Extract all DICOM headers and values from all images in folder, only keeping tags with at least one non-empty-string value."""
     
     all_metadata = []
@@ -109,12 +128,18 @@ def extract_all_dicom_metadata(folder_path, output_csv="all_dicom_metadata_3.csv
     valid_tags = {tag for tag, has_value in tag_value_tracker.items() if has_value}
     print(f"Keeping {len(valid_tags)} tags with at least one non-empty-string value.")
     
-    # Convert to DataFrame
+    # Convert to DataFrame. An empty folder leaves no rows at all, and selecting the
+    # 'filename' column on an empty frame raises a KeyError, so return early instead.
     df = pd.DataFrame(all_metadata)
+    if df.empty:
+        print("No DICOM files found; nothing written.")
+        return df
     keep_cols = ['filename'] + [col for col in df.columns if col in valid_tags]
     df = df[keep_cols]
     
     # Save to CSV
+    output_dir = os.path.dirname(os.path.abspath(output_csv))
+    os.makedirs(output_dir, exist_ok=True)
     df.to_csv(output_csv, index=False)
     print(f"Saved metadata to: {output_csv}")
     print(f"Total files processed: {len(all_metadata)}")
@@ -122,8 +147,29 @@ def extract_all_dicom_metadata(folder_path, output_csv="all_dicom_metadata_3.csv
     
     return df
 
-if __name__ == "__main__":
-    anon_folder = "dataset/images"
+def main():
+    parser = argparse.ArgumentParser(
+        description="Compile every DICOM tag from every file in a folder into one wide "
+                    "CSV, one row per file. Useful for auditing anonymized output.")
+    parser.add_argument("folder", help="folder of DICOM files to read")
+    parser.add_argument("--output", default=None,
+                        help=f"CSV to write (default: {DEFAULT_OUTPUT} inside the folder)")
+    args = parser.parse_args()
+
+    if not os.path.isdir(args.folder):
+        print(f"ERROR: folder does not exist: {args.folder}")
+        return 1
+
+    output_csv = args.output or os.path.join(args.folder, DEFAULT_OUTPUT)
+
     print("Extracting ALL DICOM metadata...")
-    metadata_df = extract_all_dicom_metadata(anon_folder, "dataset/new_dicom_metadata.csv")
-    print(f"\nComplete! CSV shape: {metadata_df.shape} (rows x columns)")
+    df = extract_all_dicom_metadata(args.folder, output_csv)
+    if df.empty:
+        print(f"\nNo DICOM files found under {args.folder}")
+        return 1
+    print(f"\nComplete! CSV shape: {df.shape} (rows x columns)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
