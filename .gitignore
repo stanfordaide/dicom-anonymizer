@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# DICOM files are ignored by default so that real patient data cannot be committed
+# by accident. The sample/ set is synthetic and deliberately tracked.
+*.dcm
+!sample/**/*.dcm
+
+# Likewise for the filename mapping: on real data this file is the re-identification
+# key and must never enter version control. sample/'s maps synthetic names only.
+filename_mappings.csv
+!sample/filename_mappings.csv
+
+# Partial files left behind by an interrupted rename
+*.dcm.partial

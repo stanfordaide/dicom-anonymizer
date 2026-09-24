@@ -53,8 +53,12 @@ def get_jittered_date(original_date, patient_id):
     except:
         return str(original_date)  # Return original if parsing fails
 
-def remove_lpch(value):
-    """Remove LPCH and LPCH - substrings from value"""
+def remove_lpch(value, verbose=True):
+    """Remove LPCH and LPCH - substrings from value.
+
+    verbose=False silences the log line, so callers that only want to know what the
+    cleaned value would be (dicom_anon_checker.py) do not pollute their own output.
+    """
     if isinstance(value, str):
         original_value = value
         # Remove LPCH with various spacing patterns
@@ -63,7 +67,7 @@ def remove_lpch(value):
         cleaned = re.sub(r'\s+', ' ', cleaned)
         cleaned = re.sub(r'^[\s\-]+|[\s\-]+$', '', cleaned)
         
-        if original_value != cleaned:
+        if original_value != cleaned and verbose:
             print(f"LPCH REMOVED: '{original_value}' -> '{cleaned}'")
         
         return cleaned
@@ -365,28 +369,37 @@ def get_tags_of_types(filepath_to_dicom_dict):
 # Config CSV lives next to this script, so it resolves no matter where you run from
 CSV_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dicom-data-dict.csv")
 
+# The CSV records intent in prose ("keep but populate with 0"); this dict is the
+# machine-readable implementation of those 14 rows. It lives at module level so that
+# dicom_anon_checker.py can import it and verify against the same definitions rather
+# than keeping its own copy, which would silently drift.
+CUSTOM_TYPE_ONES = {
+    "ContentDate" : "random jitter",
+    "PatientID" : "hash",
+    "ContributingEquipmentSequence_Seq0_Manufacturer" : "hash",
+    "StudyInstanceUID" : "hash",
+    "SeriesInstanceUID" : "hash",
+    "FilterMaterial" : "RHODIUM",
+    # These four are VR IS (integer string) - use ints, not strings
+    "CollimatorLeftVerticalEdge" : 0,
+    "CollimatorRightVerticalEdge" : 0,
+    "CollimatorUpperHorizontalEdge" : 0,
+    "CollimatorLowerHorizontalEdge" : 0,
+    "ShutterShape" : "RECTANGULAR",
+    # VR FL (float) - a string here fails inside save_as(), mid-write
+    "DistanceSourceToIsocenter" : 1.0,
+    "Trim" : "1",
+    "RadiationSetting" : "SC"
+}
+
+# The prefix get_consistent_uid() generates replacement UIDs under
+UID_PREFIX = "1.2.840.113619."
+
 if __name__ == "__main__":
     # get info on what to do with each tag
     type_ones, type_ones_to_modify, type_twos, type_threes = get_tags_of_types(CSV_CONFIG_PATH)
-    
-    custom_type_ones = {
-        "ContentDate" : "random jitter",
-        "PatientID" : "hash",
-        "ContributingEquipmentSequence_Seq0_Manufacturer" : "hash",
-        "StudyInstanceUID" : "hash",
-        "SeriesInstanceUID" : "hash",
-        "FilterMaterial" : "RHODIUM",
-        # These four are VR IS (integer string) - use ints, not strings
-        "CollimatorLeftVerticalEdge" : 0,
-        "CollimatorRightVerticalEdge" : 0,
-        "CollimatorUpperHorizontalEdge" : 0,
-        "CollimatorLowerHorizontalEdge" : 0,
-        "ShutterShape" : "RECTANGULAR",
-        # VR FL (float) - a string here fails inside save_as(), mid-write
-        "DistanceSourceToIsocenter" : 1.0,
-        "Trim" : "1",
-        "RadiationSetting" : "SC"
-    }
+
+    custom_type_ones = CUSTOM_TYPE_ONES
 
     input_folder = "sample/sample_dicoms/"
     output_folder = "sample/anonymized_output/"

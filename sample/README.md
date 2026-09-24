@@ -18,6 +18,9 @@ python sample/make_sample_dicoms.py   # writes sample_dicoms/
 python anonymize.py                   # writes anonymized_output/
 # writes anonymized_renamed_output/ and filename_mappings.csv
 python rename_official_files.py sample/anonymized_output sample/anonymized_renamed_output
+# verify the result
+python dicom_anon_checker.py sample/sample_dicoms sample/anonymized_renamed_output \
+    --mappings sample/filename_mappings.csv
 ```
 
 Note that the last step refuses to overwrite an existing `anonymized_renamed_output/` or
