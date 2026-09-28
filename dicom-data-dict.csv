@@ -2,11 +2,11 @@ Tag,Type,Definition,Example,Action_to_Take
 SpecificCharacterSet,1,Character set that expands the Basic Graphic Set,"ISO_IR 100 (means Latin alphabet)",keep
 ImageType,3,Image identification characteristics,"['ORIGINAL', 'PRIMARY', '']",keep
 SOPClassUID,1,"Uniquely identifies SOP class (data class, identifies actions that can be done with the data like store/retrieve)",1.2.840.10008.5.1.4.1.1.1.1,keep
-SOPInstanceUID,1,Uniquely identifies SOP instance (instance of data within a dataset),1.2.840.4267.32.168089853718582359160026462211027553108,keep
-StudyDate,2,Date study started,20190520,empty
+SOPInstanceUID,1,Uniquely identifies SOP instance (instance of data within a dataset),1.2.840.4267.32.168089853718582359160026462211027553108,keep but hash
+StudyDate,2,Date study started,20190520,remove
 SeriesDate,3,Date series started,20190520,remove
 AcquisitionDate,3,Date of data acquisition,20190520,remove
-ContentDate,1,Date when inventory collection began,20190520,keep but random jitter
+ContentDate,1,Date when inventory collection began,20190520,remove
 AccessionNumber,2,Identifies image service request,AY64a3475,empty
 Modality,1,Type of imaging,DX,keep
 ConversionType,1,Type of image conversion,WSD,keep
@@ -26,7 +26,7 @@ PatientName,2,Self-explanatory,AY649d925,empty
 PatientID,2,Identifier of patient,AY649d925,keep but hash
 PatientBirthDate,2,Self-explanatory,20161221,empty
 PatientSex,2,Self-explanatory,F,empty
-PatientAge,3,Self-explanatory,002Y,remove
+PatientAge,1,Age of patient in whole years at time of study (computed from PatientBirthDate + StudyDate),025Y,keep but compute age
 PatientIdentityRemoved,3,Self-explanatory,YES,remove
 BodyPartExamined,3,Self-explanatory,ABDOMEN_PELVIS_H,keep
 KVP,3,Peak kilo-voltage output of X-ray tech,62,keep
@@ -44,7 +44,7 @@ FilterType,3,Type of filter in X-ray beam,NONE,keep
 ImagerPixelSpacing,3,Physical distance between center of each pixel (measured at front plane of Image Receptor),"['0.18705882', '0.18705882']",keep
 Grid,3,Identifies the grid,NONE,keep
 FocalSpots,3,Size of the focal spot in mm,0.6,keep
-AcquisitionDeviceProcessingCode,3,Device-specific processing code for the image,8#1561261111001009590100#30302020#10-200#20350#120250,keep
+AcquisitionDeviceProcessingCode,3,Device-specific processing code for the image,8#1561261111001009590100#30302020#10-200#20350#120250,remove
 RelativeXRayExposure,3,Manufacturer-specific relative X-ray exposure,105,remove
 PositionerSecondaryAngle,2,Position of X-ray image intensifier,0,empty
 CollimatorShape,1,"Shape of collimator (device, part of imaging tech, that narrows particles/beams)",POLYGONAL,keep
