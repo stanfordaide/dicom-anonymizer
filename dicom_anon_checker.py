@@ -17,7 +17,7 @@
 #   python dicom_anon_checker.py <original_folder> <anonymized_folder> \
 #       [--mappings PATH] [--config CSV] [--verbose]
 #
-# Pass --mappings when the anonymized files have been renamed to ANON- names; the
+# Pass --mappings when the anonymized files have been renamed to HIPSTER- names; the
 # mapping CSV is what pairs them back to their originals.
 
 import argparse
@@ -368,7 +368,7 @@ def main():
     parser.add_argument("anonymized_folder", help="folder of anonymized files")
     parser.add_argument("--mappings", default=None,
                         help="filename_mappings.csv, required if the anonymized files "
-                             "have been renamed to ANON- names")
+                             "have been renamed to HIPSTER- names")
     parser.add_argument("--config", default=CSV_CONFIG_PATH,
                         help="data dict CSV (default: dicom-data-dict.csv beside anonymize.py)")
     parser.add_argument("--verbose", action="store_true",

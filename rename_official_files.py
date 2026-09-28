@@ -3,7 +3,7 @@
 # Metadata anonymization (anonymize.py) cleans the tags inside each file, but the
 # filenames themselves frequently carry PHI - names, MRNs, accession numbers. This
 # copies an anonymized folder to a new folder, renaming every file to
-# ANON-XXXXXXXX.dcm, and writes a CSV mapping the new names back to the old ones.
+# HIPSTER-XXXXXXXX.dcm, and writes a CSV mapping the new names back to the old ones.
 #
 # The numbering is a sequential counter over the files sorted by relative path, so
 # collisions are impossible by construction rather than merely unlikely, and the
@@ -28,7 +28,7 @@ import sys
 from anonymize import folders_overlap
 
 MAPPINGS_FILENAME = "filename_mappings.csv"
-ANON_PREFIX = "ANON-"
+ANON_PREFIX = "HIPSTER-"
 ANON_DIGITS = 8
 
 
@@ -51,7 +51,7 @@ def find_dicom_files(folder):
 
 
 def make_anon_name(index, digits=ANON_DIGITS):
-    """ANON-00000001.dcm for index 1. Unique because index is a counter."""
+    """HIPSTER-00000001.dcm for index 1. Unique because index is a counter."""
     return f"{ANON_PREFIX}{index:0{digits}d}.dcm"
 
 
@@ -164,7 +164,7 @@ def rename_folder(input_folder, output_folder, mappings_path=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Copy a folder of DICOMs to anonymized filenames (ANON-XXXXXXXX.dcm) "
+        description="Copy a folder of DICOMs to anonymized filenames (HIPSTER-XXXXXXXX.dcm) "
                     "and write a CSV mapping the new names to the old ones.")
     parser.add_argument("input_folder",
                         help="folder of (already metadata-anonymized) DICOM files")

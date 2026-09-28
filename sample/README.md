@@ -8,8 +8,8 @@ MRN, so the anonymizer's handling of private tags is exercised by the sample run
 
 - `sample_dicoms/` — 5 synthetic DICOMs, used as input
 - `anonymized_output/` — the result of running the anonymizer over them
-- `anonymized_renamed_output/` — the same files with filenames anonymized to `ANON-XXXXXXXX.dcm`
-- `filename_mappings.csv` — maps each `ANON-` name back to its original filename
+- `anonymized_renamed_output/` — the same files with filenames anonymized to `HIPSTER-XXXXXXXX.dcm`
+- `filename_mappings.csv` — maps each `HIPSTER-` name back to its original filename
 - `anonymized_metadata.csv` — every tag of the anonymized output, one row per file
 
 All of these are regenerated output. To rebuild them from scratch, run from the

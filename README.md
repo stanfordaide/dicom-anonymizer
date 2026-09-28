@@ -29,13 +29,13 @@ That produces four things inside the output folder:
 ```
 <output_folder>/
   anonymized/                metadata anonymized, original filenames (intermediate)
-  anonymized_renamed/        the deliverable: ANON-XXXXXXXX.dcm, flattened
+  anonymized_renamed/        the deliverable: HIPSTER-XXXXXXXX.dcm, flattened
   filename_mappings.csv      the re-identification key
   anonymized_metadata.csv    every tag of the output, one row per file, for auditing
 ```
 
 **Only `anonymized_renamed/` is shareable.** `filename_mappings.csv` maps every
-`ANON-` name back to the original filename, so it re-identifies the dataset and must
+`HIPSTER-` name back to the original filename, so it re-identifies the dataset and must
 be kept private. It is written beside the deliverable rather than inside it for
 exactly that reason.
 
@@ -46,7 +46,7 @@ elsewhere, and `--verbose` for every per-tag decision instead of a summary.
 start if `anonymized/` or `anonymized_renamed/` already has anything in it, or if the
 mapping CSV already exists. Mixing two runs in one folder would leave a mapping CSV that
 no longer describes what is on disk, and overwriting a mapping CSV would destroy the only
-route from an `ANON-` name back to its original filename. There is no override: to re-run,
+route from an `HIPSTER-` name back to its original filename. There is no override: to re-run,
 delete the previous output folder (and its mapping CSV) yourself, or point the run at a
 different output folder. Nothing is ever deleted for you.
 
@@ -144,7 +144,7 @@ CSV (e.g. a tag would end up containing the text `keep but populate with 0`).
 | `sample/make_sample_dicoms.py` | Generates synthetic test DICOMs (no real patient data) into `sample/sample_dicoms/`.                                                                                                                 |
 | `compile_metadata.py`          | Dumps every tag of every DICOM in a folder to a wide CSV. Generated the tag names used in `dicom-data-dict.csv`, hence the `_Seq0_` flattening convention. Runs as pipeline stage 4, and standalone. |
 | `dicom_anon_checker.py`        | Verifies anonymization: checks every data dict rule was honored, reports to the terminal, exits non-zero on failure. Has its own CLI.                                                                |
-| `rename_official_files.py`     | Filename anonymization: copies a folder to `ANON-XXXXXXXX.dcm` names and writes the mapping CSV. Has its own CLI.                                                                                    |
+| `rename_official_files.py`     | Filename anonymization: copies a folder to `HIPSTER-XXXXXXXX.dcm` names and writes the mapping CSV. Has its own CLI.                                                                                    |
 
 ## Test data
 
