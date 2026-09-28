@@ -11,7 +11,7 @@
 # Given an input folder of DICOMs, produces:
 #
 #   <output_folder>/anonymized/           metadata anonymized, original filenames
-#   <output_folder>/anonymized_renamed/   final deliverable: ANON- names, flattened
+#   <output_folder>/anonymized_renamed/   final deliverable: HIPSTER- names, flattened
 #   <output_folder>/filename_mappings.csv the re-identification key
 #   <output_folder>/anonymized_metadata.csv every tag of the output, for auditing
 #

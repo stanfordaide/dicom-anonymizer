@@ -17,13 +17,14 @@
 #   python dicom_anon_checker.py <original_folder> <anonymized_folder> \
 #       [--mappings PATH] [--config CSV] [--verbose]
 #
-# Pass --mappings when the anonymized files have been renamed to ANON- names; the
+# Pass --mappings when the anonymized files have been renamed to HIPSTER- names; the
 # mapping CSV is what pairs them back to their originals.
 
 import argparse
 import csv
 import hashlib
 import os
+import re
 import sys
 from datetime import datetime
 
@@ -34,12 +35,11 @@ from anonymize import (BINARY_VRS, CSV_CONFIG_PATH, CUSTOM_TYPE_ONES,
                        NEVER_REMOVE_UNLISTED, UID_PREFIX, normalize_tag_name,
                        remove_lpch)
 
-# anonymize.py's get_jittered_date() shifts by at most this many days either way
-MAX_JITTER_DAYS = 30
-
-# These two get a freshly generated UID rather than a hash of the original, so their
+# These tags get a freshly generated UID rather than a hash of the original, so their
 # value cannot be predicted - only its shape can be checked
-UID_HASH_TAGS = {"StudyInstanceUID", "SeriesInstanceUID"}
+UID_HASH_TAGS = {"StudyInstanceUID", "SeriesInstanceUID", "SOPInstanceUID"}
+
+AS_VR_RE = re.compile(r'^\d{3}[YMWD]$')
 
 PASS, FAIL, SKIP, WARN = "PASS", "FAIL", "SKIP", "WARN"
 
@@ -93,27 +93,6 @@ def expected_hash(original_value):
     return hashlib.sha256(scrubbed(original_value).encode()).hexdigest()[:16]
 
 
-def check_jitter(original_value, anon_value):
-    """A jittered date must parse and land within MAX_JITTER_DAYS of the original.
-
-    The offset is random per patient and may legitimately be 0, so an unchanged value
-    is not itself a failure.
-    """
-    try:
-        original = datetime.strptime(str(original_value), '%Y%m%d')
-    except ValueError:
-        # anonymize.py returns the original untouched when it cannot parse it
-        return (PASS if str(anon_value) == str(original_value)
-                else FAIL), f"unparseable original, expected it passed through"
-    try:
-        jittered = datetime.strptime(str(anon_value), '%Y%m%d')
-    except ValueError:
-        return FAIL, f"not a valid YYYYMMDD date: {anon_value!r}"
-    offset = abs((jittered - original).days)
-    if offset > MAX_JITTER_DAYS:
-        return FAIL, f"shifted {offset} days, more than the {MAX_JITTER_DAYS} day limit"
-    return PASS, f"shifted {offset} days"
-
 
 CUSTOM_BY_KEY = {normalize_tag_name(k): v for k, v in CUSTOM_TYPE_ONES.items()}
 
@@ -165,10 +144,15 @@ def check_rule(tag_name, action, original_element, anon_element, unbacked=False)
             return FAIL, f"expected sha256[:16] {want!r}, got {str(anon_value)!r}"
         return PASS, "hashed"
 
-    if action == "random jitter":
+    if action == "compute age":
+        # Tag may be absent if birth date or exam date was unavailable — that is
+        # intentional, so absence is not a failure.
         if not present:
-            return FAIL, "expected a jittered date, but the tag was removed"
-        return check_jitter(original_value, anon_value)
+            return PASS, "removed (age could not be computed)"
+        val_str = str(anon_value).strip()
+        if not AS_VR_RE.match(val_str):
+            return FAIL, f"expected AS-VR format (e.g. 025Y), got {val_str!r}"
+        return PASS, f"computed age: {val_str}"
 
     if action == "keep":
         if not present:
@@ -384,7 +368,7 @@ def main():
     parser.add_argument("anonymized_folder", help="folder of anonymized files")
     parser.add_argument("--mappings", default=None,
                         help="filename_mappings.csv, required if the anonymized files "
-                             "have been renamed to ANON- names")
+                             "have been renamed to HIPSTER- names")
     parser.add_argument("--config", default=CSV_CONFIG_PATH,
                         help="data dict CSV (default: dicom-data-dict.csv beside anonymize.py)")
     parser.add_argument("--verbose", action="store_true",

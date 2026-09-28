@@ -29,3 +29,6 @@ sample/pipeline_output/
 
 # Partial files left behind by an interrupted rename
 *.dcm.partial
+
+# Local experiment sandbox — real patient data lives here, never commit
+workdir/

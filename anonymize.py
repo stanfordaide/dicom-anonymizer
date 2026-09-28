@@ -6,16 +6,15 @@ import pydicom
 import os
 import re
 import hashlib
-import random
 from pathlib import Path
 from pydicom.uid import generate_uid
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Store mappings to ensure consistency
 patient_id_mapping = {}
 study_uid_mapping = {}
 series_uid_mapping = {}
-date_jitter_mapping = {}
+sop_uid_mapping = {}
 
 def get_consistent_hash(value, mapping_dict):
     """Get consistent hash for repeated values"""
@@ -39,22 +38,33 @@ def get_consistent_numeric_hash(value, mapping_dict, max_digits=12):
     mapping_dict[value] = str_hash
     return str_hash
 
-def get_jittered_date(original_date, patient_id):
-    """Apply consistent date jitter per patient"""
-    if patient_id in date_jitter_mapping:
-        jitter_days = date_jitter_mapping[patient_id]
-    else:
-        # Generate random jitter between -30 and +30 days per patient
-        jitter_days = random.randint(-30, 30)
-        date_jitter_mapping[patient_id] = jitter_days
-    
+def compute_patient_age(ds):
+    """Return PatientAge as an AS-VR string (e.g. '025Y') from birth date + exam date.
+
+    Uses the first available exam date in preference order. Must be called before the
+    anonymization passes clear those date fields.  Returns None when either date is
+    absent or unparseable.
+    """
+    birth_str = getattr(ds, 'PatientBirthDate', None)
+    if not birth_str:
+        return None
+
+    exam_date_str = None
+    for attr in ('StudyDate', 'ContentDate', 'AcquisitionDate', 'SeriesDate'):
+        val = getattr(ds, attr, None)
+        if val:
+            exam_date_str = str(val)
+            break
+    if not exam_date_str:
+        return None
+
     try:
-        # Parse original date (format: YYYYMMDD)
-        original = datetime.strptime(str(original_date), '%Y%m%d')
-        jittered = original + timedelta(days=jitter_days)
-        return jittered.strftime('%Y%m%d')
-    except:
-        return str(original_date)  # Return original if parsing fails
+        birth = datetime.strptime(str(birth_str), '%Y%m%d')
+        exam  = datetime.strptime(exam_date_str[:8], '%Y%m%d')
+        age_years = (exam - birth).days // 365
+        return f'{max(age_years, 0):03d}Y'
+    except Exception:
+        return None
 
 def remove_lpch(value, verbose=True):
     """Remove LPCH and LPCH - substrings from value.
@@ -115,26 +125,24 @@ def apply_custom_action(element, keyword, action, patient_id=None):
         # Hash the value
         if keyword == "PatientID":
             new_value = get_consistent_hash(original_value, patient_id_mapping)
-        elif keyword in ["StudyInstanceUID", "SeriesInstanceUID"]:
+        elif keyword in ["StudyInstanceUID", "SeriesInstanceUID", "SOPInstanceUID"]:
             if keyword == "StudyInstanceUID":
                 new_value = get_consistent_uid(original_value, study_uid_mapping)
-            else:
+            elif keyword == "SeriesInstanceUID":
                 new_value = get_consistent_uid(original_value, series_uid_mapping)
+            else:
+                new_value = get_consistent_uid(original_value, sop_uid_mapping)
         else:
             new_value = get_consistent_hash(original_value, {})
         
         element.value = new_value
         print(f"Hashed {keyword}: '{original_value}' -> '{new_value}'")
     
-    elif action == "random jitter":
-        # Apply date jitter
-        if patient_id:
-            new_value = get_jittered_date(original_value, patient_id)
-            element.value = new_value
-            print(f"Jittered {keyword}: '{original_value}' -> '{new_value}'")
-        else:
-            print(f"Cannot jitter {keyword}: no patient ID available")
-    
+    elif action == "compute age":
+        # Value was already set (or the tag was deleted) during the preprocessing step
+        # before this pass ran.  Nothing to change here.
+        print(f"PatientAge: {element.value} (computed from birth date and exam date)")
+
     else:
         # Replace with literal value
         element.value = action
@@ -292,7 +300,18 @@ def anonymize_dicom(input_path, output_path, type_ones, type_ones_to_modify, typ
         type_threes = normalize_keys(type_threes)
         custom_type_ones = normalize_keys(custom_type_ones)
 
-        # Get PatientID for consistent jittering
+        # Compute age BEFORE date fields are removed by the anonymization passes.
+        # If computation fails (no birth date or no exam date), remove PatientAge so
+        # the original value cannot leak.
+        age_str = compute_patient_age(ds)
+        if age_str is not None:
+            ds.PatientAge = age_str
+            print(f"Computed PatientAge: {age_str}")
+        elif hasattr(ds, 'PatientAge'):
+            del ds.PatientAge
+            print("PatientAge removed: could not compute age (birth date or exam date unavailable)")
+
+        # Get PatientID (used for consistent UID hashing across files in a run)
         patient_id = None
         if hasattr(ds, 'PatientID') and ds.PatientID:
             patient_id = ds.PatientID
@@ -420,8 +439,9 @@ CSV_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dico
 # dicom_anon_checker.py can import it and verify against the same definitions rather
 # than keeping its own copy, which would silently drift.
 CUSTOM_TYPE_ONES = {
-    "ContentDate" : "random jitter",
+    "SOPInstanceUID" : "hash",
     "PatientID" : "hash",
+    "PatientAge" : "compute age",
     "ContributingEquipmentSequence_Seq0_Manufacturer" : "hash",
     "StudyInstanceUID" : "hash",
     "SeriesInstanceUID" : "hash",
